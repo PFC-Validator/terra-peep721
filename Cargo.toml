@@ -16,16 +16,16 @@ exclude = [
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-#[profile.release]
-#opt-level = 3
-#debug = false
-#rpath = false
-#lto = true
-#debug-assertions = false
-#codegen-units = 1
-#panic = 'abort'
-#incremental = false
-#overflow-checks = true
+[profile.release]
+opt-level = 3
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+panic = 'abort'
+incremental = false
+overflow-checks = true
 
 [features]
 # for more explicit tests, cargo test --features=backtraces
@@ -47,3 +47,13 @@ thiserror = { version = "1.0.23" }
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0-soon" }
+
+[package.metadata.scripts]
+optimize = """docker run --rm -v "$(pwd)":/code \
+          --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+              cosmwasm/rust-optimizer:0.12.3"""
+optimize-w32 = """docker run --rm -v c:\\users\\ihols\\pfc\\openpeep\\terra-peep721:/code  \
+            --mount type=volume,source=terra-peep_cache,target=/code/target \
+            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+            cosmwasm/rust-optimizer:0.12.3"""
