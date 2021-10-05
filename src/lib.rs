@@ -9,8 +9,7 @@ pub struct Extension {
     pub metadata_uri: String,
 }
 
-pub type TerraPeepNFT
-<'a> = cw721_base::Cw721Contract<'a, Extension, Empty>;
+pub type TerraPeepNFT<'a> = cw721_base::Cw721Contract<'a, Extension, Empty>;
 pub type ExecuteMsg = cw721_base::ExecuteMsg<Extension>;
 
 #[cfg(not(feature = "library"))]
@@ -30,8 +29,7 @@ pub mod entry {
         info: MessageInfo,
         msg: InstantiateMsg,
     ) -> StdResult<Response> {
-        TerraPeepNFT
-        ::default().instantiate(deps, env, info, msg)
+        TerraPeepNFT::default().instantiate(deps, env, info, msg)
     }
 
     #[entry_point]
@@ -41,14 +39,12 @@ pub mod entry {
         info: MessageInfo,
         msg: ExecuteMsg,
     ) -> Result<Response, ContractError> {
-        TerraPeepNFT
-        ::default().execute(deps, env, info, msg)
+        TerraPeepNFT::default().execute(deps, env, info, msg)
     }
 
     #[entry_point]
     pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
-        TerraPeepNFT
-        ::default().query(deps, env, msg)
+        TerraPeepNFT::default().query(deps, env, msg)
     }
 }
 
@@ -64,8 +60,7 @@ mod tests {
     #[test]
     fn use_metadata_extension() {
         let mut deps = mock_dependencies(&[]);
-        let contract = TerraPeepNFT
-        ::default();
+        let contract = TerraPeepNFT::default();
 
         let info = mock_info(CREATOR, &[]);
         let init_msg = InstantiateMsg {
