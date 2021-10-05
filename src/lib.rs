@@ -5,11 +5,26 @@ use cosmwasm_std::Empty;
 pub use cw721_base::{ContractError, InstantiateMsg, MintMsg, MinterResponse, QueryMsg};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Trait {
+    pub key: String,
+    pub value: String,
+}
+impl Trait {
+    pub fn create(key: &str, value: &str) -> Self {
+        Trait {
+            key: key.into(),
+            value: value.into(),
+        }
+    }
+}
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Extension {
     pub metadata_uri: String,
+    pub traits: Vec<Trait>,
 }
 
-pub type TerraPeepNFT<'a> = cw721_base::Cw721Contract<'a, Extension, Empty>;
+pub type TerraPeepNft<'a> = cw721_base::Cw721Contract<'a, Extension, Empty>;
+
 pub type ExecuteMsg = cw721_base::ExecuteMsg<Extension>;
 
 #[cfg(not(feature = "library"))]
@@ -29,7 +44,7 @@ pub mod entry {
         info: MessageInfo,
         msg: InstantiateMsg,
     ) -> StdResult<Response> {
-        TerraPeepNFT::default().instantiate(deps, env, info, msg)
+        TerraPeepNft::default().instantiate(deps, env, info, msg)
     }
 
     #[entry_point]
@@ -39,12 +54,12 @@ pub mod entry {
         info: MessageInfo,
         msg: ExecuteMsg,
     ) -> Result<Response, ContractError> {
-        TerraPeepNFT::default().execute(deps, env, info, msg)
+        TerraPeepNft::default().execute(deps, env, info, msg)
     }
 
     #[entry_point]
     pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
-        TerraPeepNFT::default().query(deps, env, msg)
+        TerraPeepNft::default().query(deps, env, msg)
     }
 }
 
@@ -55,32 +70,38 @@ mod tests {
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cw721::Cw721Query;
 
-    const CREATOR: &str = "creator";
+    const CREATOR: &str = "terra1d85ncnvn822u5lul9kf8430dd3chyjd3ka2f98";
 
     #[test]
     fn use_metadata_extension() {
         let mut deps = mock_dependencies(&[]);
-        let contract = TerraPeepNFT::default();
+        let contract = TerraPeepNft::default();
 
         let info = mock_info(CREATOR, &[]);
         let init_msg = InstantiateMsg {
-            name: "SpaceShips".to_string(),
-            symbol: "SPACE".to_string(),
+            name: "TerraPeeps".to_string(),
+            symbol: "PEEPS".to_string(),
             minter: CREATOR.to_string(),
         };
         contract
             .instantiate(deps.as_mut(), mock_env(), info.clone(), init_msg)
             .unwrap();
 
-        let token_id = "Enterprise";
+        let token_id = "PeepDEV";
+        let body = Trait::create("body", "body/bar");
+        let face = Trait::create("face", "face/id-123");
+        let color = Trait::create("color", "color/red");
+        let traits = vec![body, face, color];
+
         let mint_msg = MintMsg {
             token_id: token_id.to_string(),
-            owner: "john".to_string(),
-            name: "Starship USS Enterprise".to_string(),
-            description: Some("Spaceship with Warp Drive".into()),
-            image: None,
+            owner: "terra1d85ncnvn822u5lul9kf8430dd3chyjd3ka2f98".to_string(),
+            name: "Terra Peep #123".to_string(),
+            description: Some("Created with love by people like you".into()),
+            image: Some("https://cloudflare-ipfs.com/ipfs/QmPcVMgezRnSq33FoZvZiqYuRL4vGT54bP6nT4QVkwoMv7".into()),
             extension: Extension {
-                metadata_uri: "http://starships.example.com/Starship/Enterprise.json".into(),
+                metadata_uri: "https://cloudflare-ipfs.com/ipfs/QmPcVMgezRnSq33FoZvZiqYuRL4vGT54bP6nT4QVkwoMv7".into(),
+                traits
             },
         };
         let exec_msg = ExecuteMsg::Mint(mint_msg.clone());
