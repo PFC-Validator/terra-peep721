@@ -8,6 +8,7 @@ exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
   "contract.wasm",
   "hash.txt",
+  "artifacts/*"
 ]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -15,16 +16,16 @@ exclude = [
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[profile.release]
-opt-level = 3
-debug = false
-rpath = false
-lto = true
-debug-assertions = false
-codegen-units = 1
-panic = 'abort'
-incremental = false
-overflow-checks = true
+#[profile.release]
+#opt-level = 3
+#debug = false
+#rpath = false
+#lto = true
+#debug-assertions = false
+#codegen-units = 1
+#panic = 'abort'
+#incremental = false
+#overflow-checks = true
 
 [features]
 # for more explicit tests, cargo test --features=backtraces
@@ -33,13 +34,16 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-cosmwasm-std = { version = "0.16.2" }
-cosmwasm-storage = { version = "0.16.0" }
-cw-storage-plus = "0.8.0"
-cw2 = "0.8.1"
-schemars = "0.8.3"
-serde = { version = "1.0.127", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0.26" }
+#cw0 = { path =  "../cw-plus/packages/cw0", version = "0.10.0-soon3" }
+cw0 = {  version = "0.10.0-soon3" }
+cw2 = { version = "0.10.0-soon3" }
+cw721 = {version = "0.10.0-soon3" }
+cw721-base = { version = "0.10.0-soon3", features = ["library"] }
+cw-storage-plus = { version = "0.10.0-soon3" }
+cosmwasm-std = { version = "1.0.0-soon" }
+schemars = "0.8.1"
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0.23" }
 
 [dev-dependencies]
-cosmwasm-schema = { version = "0.16.0" }
+cosmwasm-schema = { version = "1.0.0-soon" }
