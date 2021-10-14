@@ -136,7 +136,7 @@ where
         msg.buy_metadata.perform_mint(&mut extension_copy);
 
         if let Some(coins) = info.funds.first() {
-            if coins.denom != "uluna" || coins.amount < Uint128::from(3_000_000 as u64) {
+            if coins.denom != "uluna" || coins.amount < Uint128::from(3_000_000_u64) {
                 return Err(ContractError::Funds {});
             }
         } else {
@@ -317,13 +317,13 @@ where
         recipient: &str,
         token_id: &str,
     ) -> Result<TokenInfo<T>, ContractError> {
-        let mut token = self.tokens.load(deps.storage, &token_id)?;
+        let mut token = self.tokens.load(deps.storage, token_id)?;
         // ensure we have permissions
         self.check_can_send(deps.as_ref(), env, info, &token)?;
         // set owner and remove existing approvals
         token.owner = deps.api.addr_validate(recipient)?;
         token.approvals = vec![];
-        self.tokens.save(deps.storage, &token_id, &token)?;
+        self.tokens.save(deps.storage, token_id, &token)?;
         Ok(token)
     }
 
@@ -339,7 +339,7 @@ where
         add: bool,
         expires: Option<Expiration>,
     ) -> Result<TokenInfo<T>, ContractError> {
-        let mut token = self.tokens.load(deps.storage, &token_id)?;
+        let mut token = self.tokens.load(deps.storage, token_id)?;
         // ensure we have permissions
         self.check_can_approve(deps.as_ref(), env, info, &token)?;
 
@@ -365,7 +365,7 @@ where
             token.approvals.push(approval);
         }
 
-        self.tokens.save(deps.storage, &token_id, &token)?;
+        self.tokens.save(deps.storage, token_id, &token)?;
 
         Ok(token)
     }

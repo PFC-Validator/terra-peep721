@@ -39,11 +39,7 @@ impl MetaDataPersonalization for Metadata {
                 .filter(|t| t.trait_type == trait_type)
                 .cloned()
                 .collect::<Vec<_>>();
-            if let Some(t) = trait_attribute.first() {
-                Some(t.clone())
-            } else {
-                None
-            }
+            trait_attribute.first().cloned()
         } else {
             None
         }
@@ -52,7 +48,7 @@ impl MetaDataPersonalization for Metadata {
         if let Some(attr_list) = &self.attributes {
             let mut new_attr: Vec<Trait> = Default::default();
             for att in attr_list {
-                if &att.trait_type == trait_type {
+                if att.trait_type == trait_type {
                     new_attr.push(Trait {
                         display_type: att.display_type.clone(),
                         trait_type: att.trait_type.clone(),

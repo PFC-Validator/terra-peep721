@@ -54,6 +54,7 @@ impl<'a, T, C> Cw721Contract<'a, T, C>
 where
     T: Serialize + DeserializeOwned + Clone,
 {
+    #[allow(clippy::too_many_arguments)]
     fn new(
         contract_key: &'a str,
         minter_key: &'a str,
