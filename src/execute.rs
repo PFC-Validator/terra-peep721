@@ -1,4 +1,4 @@
-use cosmwasm_crypto::secp256k1_verify;
+//use cosmwasm_crypto::secp256k1_verify;
 //use crate::secp256k1::secp256k1_verify;
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128};
 use serde::de::DeserializeOwned;
@@ -145,8 +145,10 @@ where
         }
         let hash = Sha256::digest(msg.attributes.as_bytes());
 
-        let result = secp256k1_verify(&hash, msg.signature.as_ref(), public_key.as_ref())
-            .map_err(|e| ContractError::Crypto(e))?;
+        let result =
+            deps.api
+                .secp256k1_verify(&hash, msg.signature.as_ref(), public_key.as_ref())?;
+        // .map_err(|e| ContractError::Crypto(e))?;
         if result {
             let mut extension_copy: T = serde_json_wasm::from_str(&msg.attributes)?;
             if let Some(token_id) = msg.buy_metadata.perform_mint(&mut extension_copy) {

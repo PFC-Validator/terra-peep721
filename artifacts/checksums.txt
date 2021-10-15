@@ -1,1 +1,1 @@
-bf26c8d9c3801c179e15a2cbce1f4e385a0ef988bd5ac6f5345b590e050e8e30  terra_peep721.wasm
+aefd0cb5a0b267b56ca8c1acb9d902e0c3fc2771032ec74b6ad9983df80e409c  terra_peep721.wasm
