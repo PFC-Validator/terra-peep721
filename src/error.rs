@@ -12,7 +12,7 @@ pub enum ContractError {
     #[error("Funds Missing or insufficient")]
     Funds {},
     #[error("Signature doesn't match")]
-    BADSIG {},
+    BadSignature {},
 
     #[error("token_id already claimed")]
     Claimed {},
@@ -28,7 +28,7 @@ pub enum ContractError {
     #[error(transparent)]
     CryptoVerify(#[from] VerificationError),
     #[error("Token ID Can't be set?")]
-    BadTokenID {},
+    BadTokenId {},
     #[error("Invalid Secp256k1 Pubkey Format")]
     InvalidSecp256k1PubkeyFormat {},
     // #[error("Crypto {0}")]

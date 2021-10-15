@@ -172,12 +172,12 @@ where
                     .add_attribute("minter", info.sender)
                     .add_attribute("token_id", msg.token_id))
             } else {
-                Err(ContractError::BadTokenID {})
+                Err(ContractError::BadTokenId {})
             }
 
             //Err(ContractError::BADSIG {})
         } else {
-            Err(ContractError::BADSIG {})
+            Err(ContractError::BadSignature {})
         }
     }
 }
