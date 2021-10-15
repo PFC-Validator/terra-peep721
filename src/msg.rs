@@ -18,6 +18,10 @@ pub struct InstantiateMsg {
     /// This is designed for a base NFT that is controlled by an external program
     /// or contract. You will likely replace this with custom logic in custom NFTs
     pub minter: String,
+    /// public key that can sign buy messages
+    pub public_key: String,
+    /// minimum amount of uluna to buy via BUY message
+    pub mint_amount: u64,
 }
 
 /// This is like Cw721ExecuteMsg but we add a Mint command for an owner

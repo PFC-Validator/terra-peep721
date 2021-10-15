@@ -1,5 +1,3 @@
-//use cosmwasm_crypto::secp256k1_verify;
-//use crate::secp256k1::secp256k1_verify;
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -16,7 +14,10 @@ use crate::state::{Approval, Cw721Contract, TokenInfo};
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cw721-base";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-
+/// Length of a serialized compressed public key
+const ECDSA_COMPRESSED_PUBKEY_LEN: usize = 33;
+/// Length of a serialized uncompressed public key
+const ECDSA_UNCOMPRESSED_PUBKEY_LEN: usize = 65;
 impl<'a, T, C> Cw721Contract<'a, T, C>
 where
     T: Serialize + DeserializeOwned + Clone + MetaDataPersonalization,
@@ -35,10 +36,30 @@ where
             name: msg.name,
             symbol: msg.symbol,
         };
+        let public_key = base64::decode(&msg.public_key).unwrap();
+
+        Self::check_pubkey(&public_key).map_err(|e| cosmwasm_std::StdError::ParseErr {
+            target_type: "public key".to_string(),
+            msg: format!("Parsing Public Key: {:?}", &e),
+        })?;
         self.contract_info.save(deps.storage, &info)?;
         let minter = deps.api.addr_validate(&msg.minter)?;
         self.minter.save(deps.storage, &minter)?;
+        self.public_key.save(deps.storage, &msg.public_key)?;
+        self.mint_amount.save(deps.storage, &msg.mint_amount)?;
         Ok(Response::default())
+    }
+    fn check_pubkey(data: &[u8]) -> Result<(), ContractError> {
+        let ok = match data.first() {
+            Some(0x02) | Some(0x03) => data.len() == ECDSA_COMPRESSED_PUBKEY_LEN,
+            Some(0x04) => data.len() == ECDSA_UNCOMPRESSED_PUBKEY_LEN,
+            _ => false,
+        };
+        if ok {
+            Ok(())
+        } else {
+            Err(ContractError::InvalidSecp256k1PubkeyFormat {})
+        }
     }
 
     pub fn execute(
@@ -133,7 +154,10 @@ where
         // TODO
         // set amount & public sig on init/admin
         let _minter = self.minter.load(deps.storage)?;
-        let public_key = self.public_key.load(deps.storage)?;
+
+        let public_key_str = self.public_key.load(deps.storage)?;
+        let public_key = base64::decode(&public_key_str).unwrap();
+        Self::check_pubkey(&public_key)?;
 
         let minimum_amount = self.mint_amount.load(deps.storage)?;
         if let Some(coins) = info.funds.first() {
@@ -143,12 +167,19 @@ where
         } else {
             return Err(ContractError::Funds {});
         }
-        let hash = Sha256::digest(msg.attributes.as_bytes());
+        let hash_message = format!("{}/{}", info.sender, msg.attributes);
+        //println!("{}", hash_message);
+        let hash = Sha256::digest(hash_message.as_bytes());
 
-        let result =
-            deps.api
-                .secp256k1_verify(&hash, msg.signature.as_ref(), public_key.as_ref())?;
-        // .map_err(|e| ContractError::Crypto(e))?;
+        // let hash_b64 = base64::encode(&hash);
+        //  println!("String:{}", msg.attributes);
+        //  println!("HASH:{}", hash_b64);
+        let signature = base64::decode(&msg.signature).unwrap();
+
+        let result = deps
+            .api
+            .secp256k1_verify(&hash, &signature, public_key.as_ref())?;
+
         if result {
             let mut extension_copy: T = serde_json_wasm::from_str(&msg.attributes)?;
             if let Some(token_id) = msg.buy_metadata.perform_mint(&mut extension_copy) {
@@ -174,8 +205,6 @@ where
             } else {
                 Err(ContractError::BadTokenId {})
             }
-
-            //Err(ContractError::BADSIG {})
         } else {
             Err(ContractError::BadSignature {})
         }

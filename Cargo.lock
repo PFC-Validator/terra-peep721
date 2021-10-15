@@ -632,6 +632,7 @@ dependencies = [
 name = "terra-peep721"
 version = "0.2.0"
 dependencies = [
+ "base64",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus",

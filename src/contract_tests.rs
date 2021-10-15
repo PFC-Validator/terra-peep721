@@ -1,20 +1,23 @@
 #![cfg(test)]
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-use cosmwasm_std::{from_binary, to_binary, CosmosMsg, DepsMut, Empty, Response, WasmMsg};
+use cosmwasm_std::{from_binary, to_binary, Coin, CosmosMsg, DepsMut, Empty, Response, WasmMsg};
 
 use cw721::{
     ApprovedForAllResponse, ContractInfoResponse, Cw721Query, Cw721ReceiveMsg, Expiration,
     NftInfoResponse, OwnerOfResponse,
 };
 
-use crate::extension::Metadata;
+use crate::extension::{Metadata, Trait};
+use crate::msg::BuyMsg;
 use crate::{
-    ContractError, Cw721Contract, ExecuteMsg, Extension, InstantiateMsg, MintMsg, QueryMsg,
+    BuyExtension, ContractError, Cw721Contract, ExecuteMsg, Extension, InstantiateMsg, MintMsg,
+    QueryMsg,
 };
 
 const MINTER: &str = "merlin";
 const CONTRACT_NAME: &str = "Magic Power";
 const SYMBOL: &str = "MGK";
+const PUBLIC_KEY: &str = "AiMzHaA2bvnDXfHzkjMM+vkSE/p0ymBtAFKUnUtQAeXe";
 
 fn setup_contract(deps: DepsMut<'_>) -> Cw721Contract<'static, Extension, Empty> {
     let contract = Cw721Contract::default();
@@ -22,6 +25,8 @@ fn setup_contract(deps: DepsMut<'_>) -> Cw721Contract<'static, Extension, Empty>
         name: CONTRACT_NAME.to_string(),
         symbol: SYMBOL.to_string(),
         minter: String::from(MINTER),
+        public_key: String::from(PUBLIC_KEY),
+        mint_amount: 3_000_000u64,
     };
     let info = mock_info("creator", &[]);
     let res = contract.instantiate(deps, mock_env(), info, msg).unwrap();
@@ -38,6 +43,8 @@ fn proper_instantiation() {
         name: CONTRACT_NAME.to_string(),
         symbol: SYMBOL.to_string(),
         minter: String::from(MINTER),
+        public_key: String::from(PUBLIC_KEY),
+        mint_amount: 3_000_000u64,
     };
     let info = mock_info("creator", &[]);
 
@@ -750,4 +757,148 @@ fn query_tokens_by_owner() {
         .tokens(deps.as_ref(), demeter, Some(by_demeter[0].clone()), Some(3))
         .unwrap();
     assert_eq!(&by_demeter[1..], &tokens.tokens[..]);
+}
+
+#[test]
+fn buying() {
+    let mut deps = mock_dependencies(&[]);
+    let contract = setup_contract(deps.as_mut());
+
+    let token_id = "petrify".to_string();
+    let token_uri = "https://www.merriam-webster.com/dictionary/petrify".to_string();
+    let attributes: Vec<Trait> = vec![
+        Trait {
+            display_type: None,
+            trait_type: "gender".to_string(),
+            value: "male".to_string(),
+        },
+        Trait {
+            display_type: None,
+            trait_type: "name".to_string(),
+            value: "Jim Morrisson".to_string(),
+        },
+    ];
+    let extension = Metadata {
+        token_uri: token_uri.clone(),
+        image: None,
+        image_data: None,
+        external_url: None,
+        description: None,
+        name: None,
+        attributes: Some(attributes),
+        background_color: None,
+        animation_url: None,
+        youtube_url: None,
+    };
+    let buy_msg = BuyExtension {
+        male_name: "James Dean".to_string(),
+        female_name: "Norma Rae".to_string(),
+    };
+    let json = serde_json_wasm::to_string(&extension);
+    assert!(json.is_ok(), "JSON unpacking failed");
+
+    let json_string = json.unwrap();
+    //   println!("{}", &json_string);
+    let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
+        token_id: token_id.clone(),
+        token_uri: Some(token_uri.clone()),
+        signature: "TODO".to_string(),
+        attributes: json_string.clone(),
+        buy_metadata: buy_msg.clone(),
+    });
+
+    // no money
+    let random = mock_info("random", &[]);
+    let err = contract
+        .execute(deps.as_mut(), mock_env(), random, mint_msg.clone())
+        .unwrap_err();
+    match err {
+        ContractError::Funds { .. } => {}
+        _ => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+    }
+
+    // not enough money
+    let random = mock_info("random", &[Coin::new(2_999_999u128, "uluna")]);
+    let err = contract
+        .execute(deps.as_mut(), mock_env(), random, mint_msg.clone())
+        .unwrap_err();
+    match err {
+        ContractError::Funds { .. } => {}
+        _ => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+    }
+    //wrong type of money
+    let random = mock_info("random", &[Coin::new(3_000_000u128, "uuusd")]);
+
+    let err = contract
+        .execute(deps.as_mut(), mock_env(), random, mint_msg.clone())
+        .unwrap_err();
+    match err {
+        ContractError::Funds { .. } => {}
+        _ => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+    }
+    //bad signature
+    let random = mock_info("random", &[Coin::new(3_000_000u128, "uluna")]);
+
+    let err = contract
+        .execute(deps.as_mut(), mock_env(), random, mint_msg.clone())
+        .unwrap_err();
+    match err {
+        ContractError::CryptoVerify { .. } => {}
+        _ => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+    }
+    let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
+        token_id: token_id.clone(),
+        token_uri: Some(token_uri.clone()),
+        signature: "TODO".to_string(),
+        attributes: json_string.clone(),
+        buy_metadata: buy_msg.clone(),
+    });
+
+    //bad signature
+    let random = mock_info("random", &[Coin::new(3_000_000u128, "uluna")]);
+
+    let err = contract
+        .execute(deps.as_mut(), mock_env(), random, mint_msg.clone())
+        .unwrap_err();
+    match err {
+        ContractError::CryptoVerify { .. } => {}
+        _ => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+    }
+    let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
+        token_id: token_id.clone(),
+        token_uri: Some(token_uri.clone()),
+        // signature is supposed to be generated from account sending the message + extension
+        signature: "/+vT0JBx74/qKwMjuhKzoe80IvYSneamPtkE2anJEPstJjltkO4pz1k+m4wwc8QmsqB3Szp+RLJR2VbE66pnSg==".to_string(),
+        attributes: json_string.clone(),
+        buy_metadata: buy_msg.clone(),
+    });
+    //good signature, the token_id not so much.
+    let random = mock_info("random", &[Coin::new(3_000_000u128, "uluna")]);
+
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, mint_msg.clone());
+
+    match contract_exec {
+        Ok(resp) => {
+            println!("{:?}", resp)
+        }
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+    }
+    //assert_eq!(err, ContractError::Unauthorized {});
+
+    // list the token_ids
+    let tokens = contract.all_tokens(deps.as_ref(), None, None).unwrap();
+    assert_eq!(1, tokens.tokens.len());
+    assert_eq!(vec!["James Dean"], tokens.tokens);
 }
