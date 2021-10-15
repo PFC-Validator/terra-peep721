@@ -14,7 +14,7 @@ pub trait MetaDataPersonalization {
 }
 
 pub trait MetaPersonalize {
-    fn perform_mint(&self, mint_meta: &mut dyn MetaDataPersonalization);
+    fn perform_mint(&self, mint_meta: &mut dyn MetaDataPersonalization) -> Option<String>;
 }
 // see: https://docs.opensea.io/docs/metadata-standards
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
@@ -71,13 +71,17 @@ pub struct BuyMetaData {
     pub female_name: String,
 }
 impl MetaPersonalize for BuyMetaData {
-    fn perform_mint(&self, mint_meta: &mut dyn MetaDataPersonalization) {
+    fn perform_mint(&self, mint_meta: &mut dyn MetaDataPersonalization) -> Option<String> {
         if let Some(gender) = mint_meta.get_decision_trait("gender") {
             if gender.value == "male" {
-                mint_meta.set_personalized_trait("gender", &self.male_name);
+                mint_meta.set_personalized_trait("name", &self.male_name);
+                Some(self.male_name.clone())
             } else {
-                mint_meta.set_personalized_trait("gender", &self.female_name);
+                mint_meta.set_personalized_trait("name", &self.female_name);
+                Some(self.female_name.clone())
             }
+        } else {
+            None
         }
     }
 }

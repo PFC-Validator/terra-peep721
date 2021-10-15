@@ -1,7 +1,9 @@
+use cosmwasm_crypto::secp256k1_verify;
+//use crate::secp256k1::secp256k1_verify;
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128};
+use sha2::{Digest, Sha256};
 
 use cw2::set_contract_version;
 use cw721::{ContractInfoResponse, CustomMsg, Cw721Execute, Cw721ReceiveMsg, Expiration};
@@ -126,51 +128,55 @@ where
         deps: DepsMut,
         _env: Env,
         info: MessageInfo,
-        msg: BuyMsg<T>,
+        msg: BuyMsg, //<T>,
     ) -> Result<Response<C>, ContractError> {
         // TODO
         // set amount & public sig on init/admin
         let _minter = self.minter.load(deps.storage)?;
+        let public_key = self.public_key.load(deps.storage)?;
 
-        let mut extension_copy = msg.extension.clone();
-        msg.buy_metadata.perform_mint(&mut extension_copy);
-
+        let minimum_amount = self.mint_amount.load(deps.storage)?;
         if let Some(coins) = info.funds.first() {
-            if coins.denom != "uluna" || coins.amount < Uint128::from(3_000_000_u64) {
+            if coins.denom != "uluna" || coins.amount < Uint128::from(minimum_amount) {
                 return Err(ContractError::Funds {});
             }
         } else {
             return Err(ContractError::Funds {});
         }
-        if msg.signature != "TODO" {
-            return Err(ContractError::BADSIG {});
+        let hash = Sha256::digest(msg.attributes.as_bytes());
+
+        let result = secp256k1_verify(&hash, msg.signature.as_ref(), public_key.as_ref())
+            .map_err(|e| ContractError::Crypto(e))?;
+        if result {
+            let mut extension_copy: T = serde_json_wasm::from_str(&msg.attributes)?;
+            if let Some(token_id) = msg.buy_metadata.perform_mint(&mut extension_copy) {
+                // create the token
+                let token = TokenInfo {
+                    owner: info.sender.clone(),
+                    approvals: vec![],
+                    token_uri: msg.token_uri,
+                    extension: extension_copy,
+                };
+                self.tokens
+                    .update(deps.storage, &token_id, |old| match old {
+                        Some(_) => Err(ContractError::Claimed {}),
+                        None => Ok(token),
+                    })?;
+
+                self.increment_tokens(deps.storage)?;
+
+                Ok(Response::new()
+                    .add_attribute("action", "mint")
+                    .add_attribute("minter", info.sender)
+                    .add_attribute("token_id", msg.token_id))
+            } else {
+                Err(ContractError::BadTokenID {})
+            }
+
+            //Err(ContractError::BADSIG {})
+        } else {
+            Err(ContractError::BADSIG {})
         }
-        /*
-        if info.sender != minter {
-            return Err(ContractError::Unauthorized {});
-        }
-
-         */
-
-        // create the token
-        let token = TokenInfo {
-            owner: info.sender.clone(),
-            approvals: vec![],
-            token_uri: msg.token_uri,
-            extension: extension_copy,
-        };
-        self.tokens
-            .update(deps.storage, &msg.token_id, |old| match old {
-                Some(_) => Err(ContractError::Claimed {}),
-                None => Ok(token),
-            })?;
-
-        self.increment_tokens(deps.storage)?;
-
-        Ok(Response::new()
-            .add_attribute("action", "mint")
-            .add_attribute("minter", info.sender)
-            .add_attribute("token_id", msg.token_id))
     }
 }
 

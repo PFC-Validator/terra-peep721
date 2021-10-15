@@ -5,7 +5,8 @@ use crate::extension::MetaDataPersonalization;
 use crate::BuyExtension;
 use cosmwasm_std::Binary;
 use cw721::Expiration;
-
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct MigrateMsg {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     /// Name of the NFT contract
@@ -58,7 +59,7 @@ where
     /// Mint a new NFT, can only be called by the contract minter
     Mint(MintMsg<T>),
     /// Allow a buyer to mint a NFT directly
-    Buy(BuyMsg<T>),
+    Buy(BuyMsg), //<T>),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -75,9 +76,10 @@ pub struct MintMsg<T> {
     pub extension: T,
 }
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
-pub struct BuyMsg<T>
+pub struct BuyMsg
+//<T>
 where
-    T: MetaDataPersonalization,
+//  T: MetaDataPersonalization,
 {
     /// Unique ID of the NFT
     pub token_id: String,
@@ -87,7 +89,8 @@ where
     pub token_uri: Option<String>,
     /// signature that proves the request was initiated by a trusted party
     pub signature: String,
-    pub extension: T,
+    pub attributes: String,
+    //  pub extension: T,
     pub buy_metadata: BuyExtension,
 }
 

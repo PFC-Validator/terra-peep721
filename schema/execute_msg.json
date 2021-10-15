@@ -190,7 +190,7 @@
       ],
       "properties": {
         "buy": {
-          "$ref": "#/definitions/BuyMsg_for_Metadata"
+          "$ref": "#/definitions/BuyMsg"
         }
       },
       "additionalProperties": false
@@ -216,20 +216,20 @@
         }
       }
     },
-    "BuyMsg_for_Metadata": {
+    "BuyMsg": {
       "type": "object",
       "required": [
+        "attributes",
         "buy_metadata",
-        "extension",
         "signature",
         "token_id"
       ],
       "properties": {
+        "attributes": {
+          "type": "string"
+        },
         "buy_metadata": {
           "$ref": "#/definitions/BuyMetaData"
-        },
-        "extension": {
-          "$ref": "#/definitions/Metadata"
         },
         "signature": {
           "description": "signature that proves the request was initiated by a trusted party",
