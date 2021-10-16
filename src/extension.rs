@@ -46,7 +46,7 @@ impl MetaDataPersonalization for Metadata {
         }
     }
     fn get_token_uri(&self) -> String {
-        return self.token_uri.clone();
+        self.token_uri.clone()
     }
 
     fn set_personalized_trait(&mut self, trait_type: &str, value: &str) {

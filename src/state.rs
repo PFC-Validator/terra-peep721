@@ -175,7 +175,7 @@ impl<'a> IndexList<String> for TokenIndexString<'a> {
         Box::new(v.into_iter())
     }
 }
-
+#[allow(clippy::ptr_arg)]
 pub fn token_owner_idx_string(d: &String, k: Vec<u8>) -> (String, Vec<u8>) {
     (d.clone(), k)
 }
