@@ -3,17 +3,36 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
+    "max_issuance",
+    "mint_amount",
     "minter",
     "name",
+    "public_key",
     "symbol"
   ],
   "properties": {
+    "max_issuance": {
+      "description": "max amount of tokens to issue",
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "mint_amount": {
+      "description": "minimum amount of uluna to buy via BUY message",
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
     "minter": {
       "description": "The minter is the only one who can create new NFTs. This is designed for a base NFT that is controlled by an external program or contract. You will likely replace this with custom logic in custom NFTs",
       "type": "string"
     },
     "name": {
       "description": "Name of the NFT contract",
+      "type": "string"
+    },
+    "public_key": {
+      "description": "public key that can sign buy messages",
       "type": "string"
     },
     "symbol": {

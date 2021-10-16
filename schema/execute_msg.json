@@ -221,30 +221,19 @@
       "required": [
         "attributes",
         "buy_metadata",
-        "signature",
-        "token_id"
+        "signature"
       ],
       "properties": {
         "attributes": {
+          "description": "attributes should be a json string",
           "type": "string"
         },
         "buy_metadata": {
           "$ref": "#/definitions/BuyMetaData"
         },
         "signature": {
-          "description": "signature that proves the request was initiated by a trusted party",
+          "description": "Unique ID of the NFT. This is generated via attributes Universal resource identifier for this NFT Should point to a JSON file that conforms to the ERC721 signature that proves the request was initiated by a trusted party",
           "type": "string"
-        },
-        "token_id": {
-          "description": "Unique ID of the NFT",
-          "type": "string"
-        },
-        "token_uri": {
-          "description": "Universal resource identifier for this NFT Should point to a JSON file that conforms to the ERC721 Metadata JSON Schema",
-          "type": [
-            "string",
-            "null"
-          ]
         }
       }
     },
