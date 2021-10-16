@@ -27,6 +27,7 @@ fn setup_contract(deps: DepsMut<'_>) -> Cw721Contract<'static, Extension, Empty>
         minter: String::from(MINTER),
         public_key: String::from(PUBLIC_KEY),
         mint_amount: 3_000_000u64,
+        max_issuance: 3u64,
     };
     let info = mock_info("creator", &[]);
     let res = contract.instantiate(deps, mock_env(), info, msg).unwrap();
@@ -45,6 +46,7 @@ fn proper_instantiation() {
         minter: String::from(MINTER),
         public_key: String::from(PUBLIC_KEY),
         mint_amount: 3_000_000u64,
+        max_issuance: 3u64,
     };
     let info = mock_info("creator", &[]);
 
@@ -764,7 +766,6 @@ fn buying() {
     let mut deps = mock_dependencies(&[]);
     let contract = setup_contract(deps.as_mut());
 
-    let token_id = "petrify".to_string();
     let token_uri = "https://www.merriam-webster.com/dictionary/petrify".to_string();
     let attributes: Vec<Trait> = vec![
         Trait {
@@ -800,8 +801,6 @@ fn buying() {
     let json_string = json.unwrap();
     //   println!("{}", &json_string);
     let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
-        token_id: token_id.clone(),
-        token_uri: Some(token_uri.clone()),
         signature: "TODO".to_string(),
         attributes: json_string.clone(),
         buy_metadata: buy_msg.clone(),
@@ -855,8 +854,6 @@ fn buying() {
         }
     }
     let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
-        token_id: token_id.clone(),
-        token_uri: Some(token_uri.clone()),
         signature: "TODO".to_string(),
         attributes: json_string.clone(),
         buy_metadata: buy_msg.clone(),
@@ -875,8 +872,6 @@ fn buying() {
         }
     }
     let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
-        token_id: token_id.clone(),
-        token_uri: Some(token_uri.clone()),
         // signature is supposed to be generated from account sending the message + extension
         signature: "/+vT0JBx74/qKwMjuhKzoe80IvYSneamPtkE2anJEPstJjltkO4pz1k+m4wwc8QmsqB3Szp+RLJR2VbE66pnSg==".to_string(),
         attributes: json_string.clone(),
@@ -901,4 +896,180 @@ fn buying() {
     let tokens = contract.all_tokens(deps.as_ref(), None, None).unwrap();
     assert_eq!(1, tokens.tokens.len());
     assert_eq!(vec!["James Dean"], tokens.tokens);
+}
+
+#[test]
+fn max_issued() {
+    let mut deps = mock_dependencies(&[]);
+    let contract = setup_contract(deps.as_mut());
+    let token_uri = "https://www.merriam-webster.com/dictionary/petrify".to_string();
+    let attributes: Vec<Trait> = vec![
+        Trait {
+            display_type: None,
+            trait_type: "gender".to_string(),
+            value: "male".to_string(),
+        },
+        Trait {
+            display_type: None,
+            trait_type: "name".to_string(),
+            value: "Jim Morrisson".to_string(),
+        },
+    ];
+    let extension = Metadata {
+        token_uri: token_uri.clone(),
+        image: None,
+        image_data: None,
+        external_url: None,
+        description: None,
+        name: None,
+        attributes: Some(attributes),
+        background_color: None,
+        animation_url: None,
+        youtube_url: None,
+    };
+    let buy_msg = BuyExtension {
+        male_name: "James Dean".to_string(),
+        female_name: "Norma Rae".to_string(),
+    };
+    let json = serde_json_wasm::to_string(&extension);
+    assert!(json.is_ok(), "JSON unpacking failed");
+
+    let json_string = json.unwrap();
+    //println!("json_string:\n{}", json_string);
+    let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
+        signature: "/+vT0JBx74/qKwMjuhKzoe80IvYSneamPtkE2anJEPstJjltkO4pz1k+m4wwc8QmsqB3Szp+RLJR2VbE66pnSg==".to_string(),
+        attributes: json_string.clone(),
+        buy_metadata: buy_msg.clone(),
+    });
+    //good signature
+    let random = mock_info("random", &[Coin::new(3_000_000u128, "uluna")]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, mint_msg.clone());
+
+    match contract_exec {
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        _ => {}
+    }
+    //    let tokens = contract.all_tokens(deps.as_ref(), None, None).unwrap();
+
+    let buy_msg = BuyExtension {
+        male_name: "Jimmy Sparks".to_string(),
+        female_name: "Florence O'Niel".to_string(),
+    };
+    let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
+        signature: "/+vT0JBx74/qKwMjuhKzoe80IvYSneamPtkE2anJEPstJjltkO4pz1k+m4wwc8QmsqB3Szp+RLJR2VbE66pnSg==".to_string(),
+        attributes: json_string.clone(),
+        buy_metadata: buy_msg.clone(),
+    });
+    //good signature, but should have been claimed
+    let random = mock_info("random", &[Coin::new(3_000_000u128, "uluna")]);
+
+    let err = contract
+        .execute(deps.as_mut(), mock_env(), random, mint_msg.clone())
+        .unwrap_err();
+    match err {
+        ContractError::Claimed {} => {}
+        _ => {
+            assert!(
+                false,
+                "Unexpected Error. should have been claimed. Token URI duplicate {:?}",
+                err
+            )
+        }
+    }
+
+    let tokens = contract.all_tokens(deps.as_ref(), None, None).unwrap();
+
+    // eprintln!("#2 - should only be 1: {}", tokens.tokens.join(","));
+    assert_eq!(tokens.tokens.len(), 1);
+    let buy_msg = BuyExtension {
+        male_name: "Peter Walker".to_string(),
+        female_name: "Lady Ga Ga".to_string(),
+    };
+
+    let json_string = r#"{"token_uri":"https://www.merriam-webster.com/dictionary/token2","image":null,"image_data":null,"external_url":null,"description":null,"name":null,"attributes":[{"display_type":null,"trait_type":"gender","value":"male"},{"display_type":null,"trait_type":"name","value":"James T. Kirk"}],"background_color":null,"animation_url":null,"youtube_url":null}"#;
+    let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
+        signature: "DZGWXyGtJq53sv1haH15sdi2xJP3m9FuD5hTYaBAdldoMD1H3wMuqWIzaE/KoMsXe7i3e/lW+54uKm8iV5lPlA==".to_string(),
+        attributes:String::from( json_string),
+        buy_metadata: buy_msg.clone(),
+    });
+    //good signature,  token #2
+    let random = mock_info("random", &[Coin::new(3_000_000u128, "uluna")]);
+
+    let contract_response = contract.execute(deps.as_mut(), mock_env(), random, mint_msg.clone());
+
+    match contract_response {
+        Ok(_resp) => {}
+        _ => {
+            assert!(false, "Unexpected Error. token#2 {:?}", err)
+        }
+    }
+    let buy_msg = BuyExtension {
+        male_name: "Evan Green".to_string(),
+        female_name: "Agatha Tokra".to_string(),
+    };
+
+    //let tokens = contract.all_tokens(deps.as_ref(), None, None).unwrap();
+
+    let json_string = r#"{"token_uri":"https://www.merriam-webster.com/dictionary/token3","image":null,"image_data":null,"external_url":null,"description":null,"name":null,"attributes":[{"display_type":null,"trait_type":"gender","value":"female"},{"display_type":null,"trait_type":"name","value":"James T. Kirk"}],"background_color":null,"animation_url":null,"youtube_url":null}"#;
+
+    let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
+        // signature is supposed to be generated from account sending the message + extension
+        signature: "PV0jYV0ddgM/h3zsnarH3/471GntTbGpqcv1dO5qYMkgAI/Vh6faK+x5mRXi89R7xC78azguIxmQdBV6ArZHpQ==".to_string(),
+        attributes: String::from(json_string),
+        buy_metadata: buy_msg.clone(),
+    });
+    //good signature, the token_id not so much.
+    let random = mock_info("random", &[Coin::new(3_000_000u128, "uluna")]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, mint_msg.clone());
+
+    match contract_exec {
+        Ok(_resp) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+    }
+    let buy_msg = BuyExtension {
+        male_name: "Adam Smith".to_string(),
+        female_name: "Natalie Parker".to_string(),
+    };
+
+    //    let tokens = contract.all_tokens(deps.as_ref(), None, None).unwrap();
+
+    let json_string = r#"{"token_uri":"https://www.merriam-webster.com/dictionary/token4","image":null,"image_data":null,"external_url":null,"description":null,"name":null,"attributes":[{"display_type":null,"trait_type":"gender","value":"female"},{"display_type":null,"trait_type":"name","value":"James T. Kirk"}],"background_color":null,"animation_url":null,"youtube_url":null}"#;
+
+    let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
+        signature: "a2jc8HamP06+S3sYfD7TluUQ8kjkOvHiHtEh+75tKCY9GcCEkUWFLRg9hpMiQQBem3PqVS2RK8fHkTl/poiiEA==".to_string(),
+        attributes: String::from(json_string),
+        buy_metadata: buy_msg.clone(),
+    });
+
+    let random = mock_info("random", &[Coin::new(3_000_000u128, "uluna")]);
+    let err = contract
+        .execute(deps.as_mut(), mock_env(), random, mint_msg.clone())
+        .unwrap_err();
+    match err {
+        ContractError::MaxIssued {} => {}
+        _ => {
+            assert!(
+                false,
+                "Unexpected Error. We've claimed more than we have {:?}",
+                err
+            )
+        }
+    }
+    // list the token_ids
+    let tokens = contract.all_tokens(deps.as_ref(), None, None).unwrap();
+    println!("{}", tokens.tokens.join(","));
+    assert_eq!(3, tokens.tokens.len());
+
+    assert_eq!(
+        true,
+        tokens
+            .tokens
+            .iter()
+            .find(|x| x.clone() == &String::from("James Dean"))
+            .is_some()
+    );
 }

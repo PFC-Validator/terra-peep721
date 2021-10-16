@@ -16,6 +16,8 @@ pub enum ContractError {
 
     #[error("token_id already claimed")]
     Claimed {},
+    #[error("Maximum amount of tokens already issued")]
+    MaxIssued {},
 
     #[error("Cannot set approval that is already expired")]
     Expired {},

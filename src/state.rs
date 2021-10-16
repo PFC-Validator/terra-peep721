@@ -17,9 +17,11 @@ where
     pub token_count: Item<'a, u64>,
     pub public_key: Item<'a, String>,
     pub mint_amount: Item<'a, u64>,
+    pub max_issuance: Item<'a, u64>,
     /// Stored as (granter, operator) giving operator full control over granter's account
     pub operators: Map<'a, (&'a Addr, &'a Addr), Expiration>,
     pub tokens: IndexedMap<'a, &'a str, TokenInfo<T>, TokenIndexes<'a, T>>,
+    pub tokens_uri: IndexedMap<'a, &'a str, String, TokenIndexString<'a>>,
 
     pub(crate) _custom_response: PhantomData<C>,
 }
@@ -44,8 +46,11 @@ where
             "operators",
             "tokens",
             "tokens__owner",
+            "tokens_uri",
+            "tokens_uri__owner",
             "public_key",
             "mint_amount",
+            "max_issuance",
         )
     }
 }
@@ -62,11 +67,17 @@ where
         operator_key: &'a str,
         tokens_key: &'a str,
         tokens_owner_key: &'a str,
+        tokens_uri_key: &'a str,
+        tokens_uri_owner_key: &'a str,
         public_key: &'a str,
         mint_amount: &'a str,
+        max_issuance: &'a str,
     ) -> Self {
         let indexes = TokenIndexes {
             owner: MultiIndex::new(token_owner_idx, tokens_key, tokens_owner_key),
+        };
+        let uri_indexes = TokenIndexString {
+            owner: MultiIndex::new(token_owner_idx_string, tokens_uri_key, tokens_uri_owner_key),
         };
         Self {
             contract_info: Item::new(contract_key),
@@ -74,8 +85,10 @@ where
             token_count: Item::new(token_count_key),
             public_key: Item::new(public_key),
             mint_amount: Item::new(mint_amount),
+            max_issuance: Item::new(max_issuance),
             operators: Map::new(operator_key),
             tokens: IndexedMap::new(tokens_key, indexes),
+            tokens_uri: IndexedMap::new(tokens_uri_key, uri_indexes),
             _custom_response: PhantomData,
         }
     }
@@ -149,4 +162,20 @@ where
 
 pub fn token_owner_idx<T>(d: &TokenInfo<T>, k: Vec<u8>) -> (Addr, Vec<u8>) {
     (d.owner.clone(), k)
+}
+
+pub struct TokenIndexString<'a> {
+    // pk goes to second tuple element
+    pub owner: MultiIndex<'a, (String, Vec<u8>), String>,
+}
+
+impl<'a> IndexList<String> for TokenIndexString<'a> {
+    fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<String>> + '_> {
+        let v: Vec<&dyn Index<String>> = vec![&self.owner];
+        Box::new(v.into_iter())
+    }
+}
+
+pub fn token_owner_idx_string(d: &String, k: Vec<u8>) -> (String, Vec<u8>) {
+    (d.clone(), k)
 }

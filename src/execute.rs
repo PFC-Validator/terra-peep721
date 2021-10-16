@@ -38,15 +38,24 @@ where
         };
         let public_key = base64::decode(&msg.public_key).unwrap();
 
+        #[cfg(not(feature = "backtraces"))]
         Self::check_pubkey(&public_key).map_err(|e| cosmwasm_std::StdError::ParseErr {
             target_type: "public key".to_string(),
             msg: format!("Parsing Public Key: {:?}", &e),
+        })?;
+
+        #[cfg(feature = "backtraces")]
+        Self::check_pubkey(&public_key).map_err(|e| cosmwasm_std::StdError::ParseErr {
+            target_type: "public key".to_string(),
+            msg: format!("Parsing Public Key: {:?}", &e),
+            backtrace: Default::default(),
         })?;
         self.contract_info.save(deps.storage, &info)?;
         let minter = deps.api.addr_validate(&msg.minter)?;
         self.minter.save(deps.storage, &minter)?;
         self.public_key.save(deps.storage, &msg.public_key)?;
         self.mint_amount.save(deps.storage, &msg.mint_amount)?;
+        self.max_issuance.save(deps.storage, &msg.max_issuance)?;
         Ok(Response::default())
     }
     fn check_pubkey(data: &[u8]) -> Result<(), ContractError> {
@@ -111,23 +120,40 @@ where
         msg: MintMsg<T>,
     ) -> Result<Response<C>, ContractError> {
         let minter = self.minter.load(deps.storage)?;
+        let max_issuance = self.max_issuance.load(deps.storage)?;
 
         if info.sender != minter {
             return Err(ContractError::Unauthorized {});
+        }
+        let count = self.token_count(deps.storage)?;
+        if count >= max_issuance {
+            return Err(ContractError::MaxIssued {});
         }
 
         // create the token
         let token = TokenInfo {
             owner: deps.api.addr_validate(&msg.owner)?,
             approvals: vec![],
-            token_uri: msg.token_uri,
+            token_uri: msg.token_uri.clone(),
             extension: msg.extension,
         };
+        if let Some(token_uri) = msg.token_uri.clone() {
+            if let Ok(_x) = self.tokens_uri.load(deps.storage, &token_uri) {
+                return Err(ContractError::Claimed {});
+            }
+        }
         self.tokens
             .update(deps.storage, &msg.token_id, |old| match old {
                 Some(_) => Err(ContractError::Claimed {}),
                 None => Ok(token),
             })?;
+        if let Some(token_uri) = msg.token_uri.clone() {
+            self.tokens_uri
+                .update(deps.storage, &token_uri, |old| match old {
+                    Some(_) => Err(ContractError::Claimed {}),
+                    None => Ok(token_uri.clone()),
+                })?;
+        }
 
         self.increment_tokens(deps.storage)?;
 
@@ -153,8 +179,12 @@ where
     ) -> Result<Response<C>, ContractError> {
         // TODO
         // set amount & public sig on init/admin
-        let _minter = self.minter.load(deps.storage)?;
-
+        //   let _minter = self.minter.load(deps.storage)?;
+        let max_issuance = self.max_issuance.load(deps.storage)?;
+        let count = self.token_count(deps.storage)?;
+        if count >= max_issuance {
+            return Err(ContractError::MaxIssued {});
+        }
         let public_key_str = self.public_key.load(deps.storage)?;
         let public_key = base64::decode(&public_key_str).unwrap();
         Self::check_pubkey(&public_key)?;
@@ -182,18 +212,27 @@ where
 
         if result {
             let mut extension_copy: T = serde_json_wasm::from_str(&msg.attributes)?;
+            let token_uri = extension_copy.get_token_uri();
             if let Some(token_id) = msg.buy_metadata.perform_mint(&mut extension_copy) {
                 // create the token
                 let token = TokenInfo {
                     owner: info.sender.clone(),
                     approvals: vec![],
-                    token_uri: msg.token_uri,
+                    token_uri: Some(token_uri.clone()),
                     extension: extension_copy,
                 };
+                if let Ok(_x) = self.tokens_uri.load(deps.storage, &token_uri) {
+                    return Err(ContractError::Claimed {});
+                }
                 self.tokens
                     .update(deps.storage, &token_id, |old| match old {
                         Some(_) => Err(ContractError::Claimed {}),
                         None => Ok(token),
+                    })?;
+                self.tokens_uri
+                    .update(deps.storage, &token_uri, |old| match old {
+                        Some(_) => Err(ContractError::Claimed {}),
+                        None => Ok(token_uri.clone()),
                     })?;
 
                 self.increment_tokens(deps.storage)?;
@@ -201,7 +240,7 @@ where
                 Ok(Response::new()
                     .add_attribute("action", "mint")
                     .add_attribute("minter", info.sender)
-                    .add_attribute("token_id", msg.token_id))
+                    .add_attribute("token_id", token_id))
             } else {
                 Err(ContractError::BadTokenId {})
             }

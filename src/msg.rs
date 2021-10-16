@@ -22,6 +22,8 @@ pub struct InstantiateMsg {
     pub public_key: String,
     /// minimum amount of uluna to buy via BUY message
     pub mint_amount: u64,
+    /// max amount of tokens to issue
+    pub max_issuance: u64,
 }
 
 /// This is like Cw721ExecuteMsg but we add a Mint command for an owner
@@ -85,16 +87,14 @@ pub struct BuyMsg
 where
 //  T: MetaDataPersonalization,
 {
-    /// Unique ID of the NFT
-    pub token_id: String,
+    /// Unique ID of the NFT. This is generated via attributes
+    //  pub token_id: String,
     /// Universal resource identifier for this NFT
     /// Should point to a JSON file that conforms to the ERC721
-    /// Metadata JSON Schema
-    pub token_uri: Option<String>,
     /// signature that proves the request was initiated by a trusted party
     pub signature: String,
+    /// attributes should be a json string
     pub attributes: String,
-    //  pub extension: T,
     pub buy_metadata: BuyExtension,
 }
 

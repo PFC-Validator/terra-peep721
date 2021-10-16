@@ -11,6 +11,7 @@ pub struct Trait {
 pub trait MetaDataPersonalization {
     fn get_decision_trait(&self, trait_type: &str) -> Option<Trait>;
     fn set_personalized_trait(&mut self, trait_type: &str, value: &str);
+    fn get_token_uri(&self) -> String;
 }
 
 pub trait MetaPersonalize {
@@ -44,6 +45,10 @@ impl MetaDataPersonalization for Metadata {
             None
         }
     }
+    fn get_token_uri(&self) -> String {
+        return self.token_uri.clone();
+    }
+
     fn set_personalized_trait(&mut self, trait_type: &str, value: &str) {
         if let Some(attr_list) = &self.attributes {
             let mut new_attr: Vec<Trait> = Default::default();
