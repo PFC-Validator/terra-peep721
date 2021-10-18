@@ -877,6 +877,7 @@ fn buying() {
         attributes: json_string.clone(),
         buy_metadata: buy_msg.clone(),
     });
+    //println!("EXEC:{}", serde_json_wasm::to_string(&mint_msg).unwrap());
     //good signature, the token_id not so much.
     let random = mock_info("random", &[Coin::new(3_000_000u128, "uluna")]);
 
@@ -994,6 +995,7 @@ fn max_issued() {
         attributes:String::from( json_string),
         buy_metadata: buy_msg.clone(),
     });
+
     //good signature,  token #2
     let random = mock_info("random", &[Coin::new(3_000_000u128, "uluna")]);
 
