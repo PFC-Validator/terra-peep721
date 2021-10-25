@@ -194,6 +194,48 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "set_public_key"
+      ],
+      "properties": {
+        "set_public_key": {
+          "type": "object",
+          "required": [
+            "public_key"
+          ],
+          "properties": {
+            "public_key": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "set_mint_amount"
+      ],
+      "properties": {
+        "set_mint_amount": {
+          "type": "object",
+          "required": [
+            "mint_amount"
+          ],
+          "properties": {
+            "mint_amount": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     }
   ],
   "definitions": {
@@ -229,7 +271,12 @@
           "type": "string"
         },
         "buy_metadata": {
-          "$ref": "#/definitions/BuyMetaData"
+          "description": "other attributes that can come from the purchaser",
+          "allOf": [
+            {
+              "$ref": "#/definitions/BuyMetaData"
+            }
+          ]
         },
         "signature": {
           "description": "Unique ID of the NFT. This is generated via attributes Universal resource identifier for this NFT Should point to a JSON file that conforms to the ERC721 signature that proves the request was initiated by a trusted party",

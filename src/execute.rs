@@ -102,6 +102,13 @@ where
                 msg,
             } => self.send_nft(deps, env, info, contract, token_id, msg),
             ExecuteMsg::Buy(msg) => self.buy(deps, env, info, msg),
+            ExecuteMsg::SetPublicKey { public_key } => {
+                self.set_public_key(deps, env, info, public_key)
+            }
+
+            ExecuteMsg::SetMintAmount { mint_amount } => {
+                self.set_mint_amount(deps, env, info, mint_amount)
+            }
         }
     }
 }
@@ -247,6 +254,43 @@ where
         } else {
             Err(ContractError::BadSignature {})
         }
+    }
+    pub fn set_public_key(
+        &self,
+        deps: DepsMut,
+        _env: Env,
+        info: MessageInfo,
+        public_key: String,
+    ) -> Result<Response<C>, ContractError> {
+        let minter = self.minter.load(deps.storage)?;
+
+        if info.sender != minter {
+            return Err(ContractError::Unauthorized {});
+        }
+        self.public_key.save(deps.storage, &public_key)?;
+        Ok(Response::new()
+            .add_attribute("action", "approve")
+            .add_attribute("sender", info.sender)
+            .add_attribute("public_key", public_key))
+    }
+    pub fn set_mint_amount(
+        &self,
+        deps: DepsMut,
+        _env: Env,
+        info: MessageInfo,
+        mint_amount: u64,
+    ) -> Result<Response<C>, ContractError> {
+        let minter = self.minter.load(deps.storage)?;
+
+        if info.sender != minter {
+            return Err(ContractError::Unauthorized {});
+        }
+        self.mint_amount.save(deps.storage, &mint_amount)?;
+        let mint_amount_string = format!("{}", mint_amount);
+        Ok(Response::new()
+            .add_attribute("action", "approve")
+            .add_attribute("sender", info.sender)
+            .add_attribute("mint_amount", mint_amount_string))
     }
 }
 

@@ -1075,3 +1075,211 @@ fn max_issued() {
             .is_some()
     );
 }
+
+#[test]
+fn set_mint_amount() {
+    let mut deps = mock_dependencies(&[]);
+    let contract = setup_contract(deps.as_mut());
+    let token_uri = "https://www.merriam-webster.com/dictionary/petrify".to_string();
+    let attributes: Vec<Trait> = vec![
+        Trait {
+            display_type: None,
+            trait_type: "gender".to_string(),
+            value: "male".to_string(),
+        },
+        Trait {
+            display_type: None,
+            trait_type: "name".to_string(),
+            value: "Jim Morrisson".to_string(),
+        },
+    ];
+    let extension = Metadata {
+        token_uri: token_uri.clone(),
+        image: None,
+        image_data: None,
+        external_url: None,
+        description: None,
+        name: None,
+        attributes: Some(attributes),
+        background_color: None,
+        animation_url: None,
+        youtube_url: None,
+    };
+    let buy_msg = BuyExtension {
+        male_name: "James Dean".to_string(),
+        female_name: "Norma Rae".to_string(),
+    };
+    let json = serde_json_wasm::to_string(&extension);
+    assert!(json.is_ok(), "JSON unpacking failed");
+
+    let json_string = json.unwrap();
+    let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
+        signature: "/+vT0JBx74/qKwMjuhKzoe80IvYSneamPtkE2anJEPstJjltkO4pz1k+m4wwc8QmsqB3Szp+RLJR2VbE66pnSg==".to_string(),
+        attributes: json_string.clone(),
+        buy_metadata: buy_msg.clone(),
+    });
+    //good signature
+    let random = mock_info("random", &[Coin::new(2_000_000u128, "uluna")]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, mint_msg.clone());
+
+    match contract_exec {
+        Err(ContractError::Funds { .. }) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        _ => {
+            assert!(false, "Contract should not have worked")
+        }
+    }
+    let mint_price_msg = ExecuteMsg::<Extension>::SetMintAmount {
+        mint_amount: 2_000_000,
+    };
+    let random = mock_info("random", &[]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, mint_price_msg.clone());
+    match contract_exec {
+        Err(ContractError::Unauthorized { .. }) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        _ => {
+            assert!(false, "Contract should not have worked")
+        }
+    }
+
+    let random = mock_info(MINTER, &[]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, mint_price_msg.clone());
+    match contract_exec {
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        _ => {}
+    }
+    let random = mock_info("random", &[Coin::new(1_999_999u128, "uluna")]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, mint_msg.clone());
+    match contract_exec {
+        Err(ContractError::Funds { .. }) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        _ => {
+            assert!(false, "Contract should not have worked")
+        }
+    }
+    let random = mock_info("random", &[Coin::new(2_000_000u128, "uluna")]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, mint_msg.clone());
+    match contract_exec {
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        _ => {}
+    }
+}
+
+#[test]
+fn set_public_key() {
+    let mut deps = mock_dependencies(&[]);
+    let contract = setup_contract(deps.as_mut());
+    let token_uri = "https://www.merriam-webster.com/dictionary/petrify".to_string();
+    let attributes: Vec<Trait> = vec![
+        Trait {
+            display_type: None,
+            trait_type: "gender".to_string(),
+            value: "male".to_string(),
+        },
+        Trait {
+            display_type: None,
+            trait_type: "name".to_string(),
+            value: "Jim Morrisson".to_string(),
+        },
+    ];
+    let extension = Metadata {
+        token_uri: token_uri.clone(),
+        image: None,
+        image_data: None,
+        external_url: None,
+        description: None,
+        name: None,
+        attributes: Some(attributes),
+        background_color: None,
+        animation_url: None,
+        youtube_url: None,
+    };
+    let buy_msg = BuyExtension {
+        male_name: "James Dean".to_string(),
+        female_name: "Norma Rae".to_string(),
+    };
+    let json = serde_json_wasm::to_string(&extension);
+    assert!(json.is_ok(), "JSON unpacking failed");
+
+    let json_string = json.unwrap();
+    println!("{}", json_string);
+    let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
+        signature: "/+vT0JBx74/qKwMjuhKzoe80IvYSneamPtkE2anJEPstJjltkO4pz1k+m4wwc8QmsqB3Szp+RLJR2VbE66pnSg==".to_string(),
+        attributes: json_string.clone(),
+        buy_metadata: buy_msg.clone(),
+    });
+    //good signature
+    let random = mock_info("random", &[Coin::new(3_000_000u128, "uluna")]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, mint_msg.clone());
+
+    match contract_exec {
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        _ => {}
+    }
+    // Phrase words - fiction artefact enjoy bicycle agent jungle another mesh item slam voice motion reflect code jewel tunnel glory hobby access that asthma ethics volcano cargo
+    // Public Key: AqNQdMoVoy8Ub5/sh2q6UYk1Di1BTpm7hoL83wQe0nZL
+    // signature: btGp+2hXDFeiosEJsw2kp5r2KYlvyNcpQE6YsNh/Ln5wbU3ZkEN4szt7j75dR35pxD+RyBK1qIU4vDLMtjG8Yw==
+    let set_pubkey_msg = ExecuteMsg::<Extension>::SetPublicKey {
+        public_key: "AqNQdMoVoy8Ub5/sh2q6UYk1Di1BTpm7hoL83wQe0nZL".to_string(),
+    };
+    let random = mock_info("random", &[]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, set_pubkey_msg.clone());
+    match contract_exec {
+        Err(ContractError::Unauthorized { .. }) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        _ => {
+            assert!(false, "Contract should not have worked")
+        }
+    }
+
+    let random = mock_info(MINTER, &[]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, set_pubkey_msg.clone());
+    match contract_exec {
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        _ => {}
+    }
+
+    let random = mock_info("random", &[Coin::new(3_000_000u128, "uluna")]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, mint_msg.clone());
+    match contract_exec {
+        Err(ContractError::BadSignature {}) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        _ => {
+            assert!(false, "Should have failed")
+        }
+    }
+    // this fails as we actually 'bought' the NFT in the first message. but it gets past the signature check so it works
+    let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
+        signature: "btGp+2hXDFeiosEJsw2kp5r2KYlvyNcpQE6YsNh/Ln5wbU3ZkEN4szt7j75dR35pxD+RyBK1qIU4vDLMtjG8Yw==".to_string(),
+        attributes: json_string.clone(),
+        buy_metadata: buy_msg.clone(),
+    });
+
+    let random = mock_info("random", &[Coin::new(3_000_000u128, "uluna")]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, mint_msg.clone());
+    match contract_exec {
+        Err(ContractError::Claimed {}) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        _ => {}
+    }
+}
