@@ -104,6 +104,9 @@ where
     pub fn mint_amount(&self, storage: &dyn Storage) -> StdResult<u64> {
         Ok(self.mint_amount.may_load(storage)?.unwrap_or_default())
     }
+    pub fn max_issuance(&self, storage: &dyn Storage) -> StdResult<u64> {
+        Ok(self.max_issuance.may_load(storage)?.unwrap_or_default())
+    }
 
     pub fn increment_tokens(&self, storage: &mut dyn Storage) -> StdResult<u64> {
         let val = self.token_count(storage)? + 1;

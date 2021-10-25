@@ -222,6 +222,42 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "public_key"
+      ],
+      "properties": {
+        "public_key": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "mint_amount"
+      ],
+      "properties": {
+        "mint_amount": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "total_supply"
+      ],
+      "properties": {
+        "total_supply": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     }
   ]
 }

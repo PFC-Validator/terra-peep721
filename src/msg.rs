@@ -171,6 +171,12 @@ pub enum QueryMsg {
 
     // Return the minter
     Minter {},
+    // Return the public key
+    PublicKey {},
+    // Return the mint amount
+    MintAmount {},
+    // Return the total supply
+    TotalSupply {},
 }
 
 /// Shows who can mint these tokens

@@ -198,6 +198,9 @@ where
             QueryMsg::AllTokens { start_after, limit } => {
                 to_binary(&self.all_tokens(deps, start_after, limit)?)
             }
+            QueryMsg::PublicKey {} => to_binary(&self.public_key(deps.storage)?),
+            QueryMsg::MintAmount {} => to_binary(&self.mint_amount(deps.storage)?),
+            QueryMsg::TotalSupply {} => to_binary(&self.max_issuance(deps.storage)?),
         }
     }
 }
