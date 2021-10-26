@@ -7,3 +7,4 @@ terrad tx wasm instantiate 13742 ${json} --chain-id bombay-12 --gas auto --from 
 
 #terrad tx wasm migrate terra1qdg78ja9xenjny6rn6nmtv2lj3u8jht0x3w5zd 13048 '{}' --from terrapeep --chain-id bombay-12 --fees 2640uluna
 terrad tx wasm migrate terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav 15766 '{}'  --from terrapeep --chain-id bombay-12 --fees 2640uluna
+terrad tx wasm execute terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav  '{"set_public_key":{"public_key":"Ar5vm8QmL/RsBjSWaxgFizKhUrR4khjr4ax4wUgW4E2I"}}' --from terrapeep --chain-id bombay-12 --fees 2640uluna
