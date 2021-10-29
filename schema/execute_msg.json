@@ -236,6 +236,30 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "set_token_status"
+      ],
+      "properties": {
+        "set_token_status": {
+          "type": "object",
+          "required": [
+            "status",
+            "token_id"
+          ],
+          "properties": {
+            "status": {
+              "type": "string"
+            },
+            "token_id": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     }
   ],
   "definitions": {
@@ -352,6 +376,12 @@
           }
         },
         "background_color": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "current_status": {
           "type": [
             "string",
             "null"

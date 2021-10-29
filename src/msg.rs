@@ -80,6 +80,10 @@ where
     SetMintAmount {
         mint_amount: u64,
     },
+    SetTokenStatus {
+        status: String,
+        token_id: String,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

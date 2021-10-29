@@ -7,7 +7,7 @@ use cw721::{
     NftInfoResponse, OwnerOfResponse,
 };
 
-use crate::extension::{Metadata, Trait};
+use crate::extension::{MetaDataPersonalization, Metadata, Trait};
 use crate::msg::BuyMsg;
 use crate::{
     BuyExtension, ContractError, Cw721Contract, ExecuteMsg, Extension, InstantiateMsg, MintMsg,
@@ -17,7 +17,8 @@ use crate::{
 const MINTER: &str = "merlin";
 const CONTRACT_NAME: &str = "Magic Power";
 const SYMBOL: &str = "MGK";
-const PUBLIC_KEY: &str = "AiMzHaA2bvnDXfHzkjMM+vkSE/p0ymBtAFKUnUtQAeXe";
+//const PUBLIC_KEY: &str = "AiMzHaA2bvnDXfHzkjMM+vkSE/p0ymBtAFKUnUtQAeXe";
+const PUBLIC_KEY: &str = "AlRu+P0GWx+4eYLCOzNk45QiDjheKvHJUTDHT5dFtHUc";
 
 fn setup_contract(deps: DepsMut<'_>) -> Cw721Contract<'static, Extension, Empty> {
     let contract = Cw721Contract::default();
@@ -94,6 +95,7 @@ fn minting() {
         background_color: None,
         animation_url: None,
         youtube_url: None,
+        current_status: None,
     };
     let mint_msg = ExecuteMsg::<Extension>::Mint(MintMsg::<Extension> {
         token_id: token_id.clone(),
@@ -197,6 +199,7 @@ fn transferring_nft() {
         background_color: None,
         animation_url: None,
         youtube_url: None,
+        current_status: None,
     };
     let mint_msg = ExecuteMsg::Mint(MintMsg::<Extension> {
         token_id: token_id.clone(),
@@ -268,6 +271,7 @@ fn sending_nft() {
         background_color: None,
         animation_url: None,
         youtube_url: None,
+        current_status: None,
     };
     let mint_msg = ExecuteMsg::Mint(MintMsg::<Extension> {
         token_id: token_id.clone(),
@@ -351,6 +355,7 @@ fn approving_revoking() {
         background_color: None,
         animation_url: None,
         youtube_url: None,
+        current_status: None,
     };
     let mint_msg = ExecuteMsg::Mint(MintMsg::<Extension> {
         token_id: token_id.clone(),
@@ -469,6 +474,7 @@ fn approving_all_revoking_all() {
         background_color: None,
         animation_url: None,
         youtube_url: None,
+        current_status: None,
     };
     let mint_msg1 = ExecuteMsg::Mint(MintMsg::<Extension> {
         token_id: token_id1.clone(),
@@ -696,6 +702,7 @@ fn query_tokens_by_owner() {
         background_color: None,
         animation_url: None,
         youtube_url: None,
+        current_status: None,
     };
     let mint_msg = ExecuteMsg::Mint(MintMsg::<Extension> {
         token_id: token_id1.clone(),
@@ -790,6 +797,7 @@ fn buying() {
         background_color: None,
         animation_url: None,
         youtube_url: None,
+        current_status: None,
     };
     let buy_msg = BuyExtension {
         male_name: "James Dean".to_string(),
@@ -873,7 +881,7 @@ fn buying() {
     }
     let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
         // signature is supposed to be generated from account sending the message + extension
-        signature: "/+vT0JBx74/qKwMjuhKzoe80IvYSneamPtkE2anJEPstJjltkO4pz1k+m4wwc8QmsqB3Szp+RLJR2VbE66pnSg==".to_string(),
+        signature: "zaHNns/mTteUjXqse0/WizwY+v7VEzh/8a1tcDkQPU4YYOuk+A/e7TE/LpUhR25zP5c9vK/Z1miLmsNn40sIUw==".to_string(),
         attributes: json_string.clone(),
         buy_metadata: buy_msg.clone(),
     });
@@ -927,6 +935,7 @@ fn max_issued() {
         background_color: None,
         animation_url: None,
         youtube_url: None,
+        current_status: None,
     };
     let buy_msg = BuyExtension {
         male_name: "James Dean".to_string(),
@@ -936,9 +945,10 @@ fn max_issued() {
     assert!(json.is_ok(), "JSON unpacking failed");
 
     let json_string = json.unwrap();
+
     //println!("json_string:\n{}", json_string);
     let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
-        signature: "/+vT0JBx74/qKwMjuhKzoe80IvYSneamPtkE2anJEPstJjltkO4pz1k+m4wwc8QmsqB3Szp+RLJR2VbE66pnSg==".to_string(),
+        signature: "zaHNns/mTteUjXqse0/WizwY+v7VEzh/8a1tcDkQPU4YYOuk+A/e7TE/LpUhR25zP5c9vK/Z1miLmsNn40sIUw==".to_string(),
         attributes: json_string.clone(),
         buy_metadata: buy_msg.clone(),
     });
@@ -959,7 +969,7 @@ fn max_issued() {
         female_name: "Florence O'Niel".to_string(),
     };
     let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
-        signature: "/+vT0JBx74/qKwMjuhKzoe80IvYSneamPtkE2anJEPstJjltkO4pz1k+m4wwc8QmsqB3Szp+RLJR2VbE66pnSg==".to_string(),
+        signature: "zaHNns/mTteUjXqse0/WizwY+v7VEzh/8a1tcDkQPU4YYOuk+A/e7TE/LpUhR25zP5c9vK/Z1miLmsNn40sIUw==".to_string(),
         attributes: json_string.clone(),
         buy_metadata: buy_msg.clone(),
     });
@@ -982,16 +992,15 @@ fn max_issued() {
 
     let tokens = contract.all_tokens(deps.as_ref(), None, None).unwrap();
 
-    // eprintln!("#2 - should only be 1: {}", tokens.tokens.join(","));
     assert_eq!(tokens.tokens.len(), 1);
     let buy_msg = BuyExtension {
         male_name: "Peter Walker".to_string(),
         female_name: "Lady Ga Ga".to_string(),
     };
 
-    let json_string = r#"{"token_uri":"https://www.merriam-webster.com/dictionary/token2","image":null,"image_data":null,"external_url":null,"description":null,"name":null,"attributes":[{"display_type":null,"trait_type":"gender","value":"male"},{"display_type":null,"trait_type":"name","value":"James T. Kirk"}],"background_color":null,"animation_url":null,"youtube_url":null}"#;
+    let json_string = r#"{"token_uri":"https://www.merriam-webster.com/dictionary/token2","image":null,"image_data":null,"external_url":null,"description":null,"name":null,"attributes":[{"display_type":null,"trait_type":"gender","value":"male"},{"display_type":null,"trait_type":"name","value":"James T. Kirk"}],"background_color":null,"animation_url":null,"youtube_url":null,"current_status":null}"#;
     let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
-        signature: "DZGWXyGtJq53sv1haH15sdi2xJP3m9FuD5hTYaBAdldoMD1H3wMuqWIzaE/KoMsXe7i3e/lW+54uKm8iV5lPlA==".to_string(),
+        signature: "D/psN5hOKiTSLsULKkh1OgWFReWexKPar/NhGh9STypOuxP2xhgtvVouHN70Zt/sTsKqKQOlPn86E6CKWRpKww==".to_string(),
         attributes:String::from( json_string),
         buy_metadata: buy_msg.clone(),
     });
@@ -1014,11 +1023,11 @@ fn max_issued() {
 
     //let tokens = contract.all_tokens(deps.as_ref(), None, None).unwrap();
 
-    let json_string = r#"{"token_uri":"https://www.merriam-webster.com/dictionary/token3","image":null,"image_data":null,"external_url":null,"description":null,"name":null,"attributes":[{"display_type":null,"trait_type":"gender","value":"female"},{"display_type":null,"trait_type":"name","value":"James T. Kirk"}],"background_color":null,"animation_url":null,"youtube_url":null}"#;
+    let json_string = r#"{"token_uri":"https://www.merriam-webster.com/dictionary/token3","image":null,"image_data":null,"external_url":null,"description":null,"name":null,"attributes":[{"display_type":null,"trait_type":"gender","value":"female"},{"display_type":null,"trait_type":"name","value":"James T. Kirk"}],"background_color":null,"animation_url":null,"youtube_url":null,"current_status":null}"#;
 
     let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
         // signature is supposed to be generated from account sending the message + extension
-        signature: "PV0jYV0ddgM/h3zsnarH3/471GntTbGpqcv1dO5qYMkgAI/Vh6faK+x5mRXi89R7xC78azguIxmQdBV6ArZHpQ==".to_string(),
+        signature: "6vbCEdDaCLYFAIdLxhHvxr3TxL53JOqWtMXeWUFwh+QtylFMkk5nxOwDnbNPZzsDYD5YDoKsmV7FmphDYau4Vg==".to_string(),
         attributes: String::from(json_string),
         buy_metadata: buy_msg.clone(),
     });
@@ -1104,6 +1113,7 @@ fn set_mint_amount() {
         background_color: None,
         animation_url: None,
         youtube_url: None,
+        current_status: None,
     };
     let buy_msg = BuyExtension {
         male_name: "James Dean".to_string(),
@@ -1113,8 +1123,9 @@ fn set_mint_amount() {
     assert!(json.is_ok(), "JSON unpacking failed");
 
     let json_string = json.unwrap();
+
     let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
-        signature: "/+vT0JBx74/qKwMjuhKzoe80IvYSneamPtkE2anJEPstJjltkO4pz1k+m4wwc8QmsqB3Szp+RLJR2VbE66pnSg==".to_string(),
+        signature: "zaHNns/mTteUjXqse0/WizwY+v7VEzh/8a1tcDkQPU4YYOuk+A/e7TE/LpUhR25zP5c9vK/Z1miLmsNn40sIUw==".to_string(),
         attributes: json_string.clone(),
         buy_metadata: buy_msg.clone(),
     });
@@ -1203,6 +1214,7 @@ fn set_public_key() {
         background_color: None,
         animation_url: None,
         youtube_url: None,
+        current_status: None,
     };
     let buy_msg = BuyExtension {
         male_name: "James Dean".to_string(),
@@ -1212,9 +1224,9 @@ fn set_public_key() {
     assert!(json.is_ok(), "JSON unpacking failed");
 
     let json_string = json.unwrap();
-    println!("{}", json_string);
+
     let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
-        signature: "/+vT0JBx74/qKwMjuhKzoe80IvYSneamPtkE2anJEPstJjltkO4pz1k+m4wwc8QmsqB3Szp+RLJR2VbE66pnSg==".to_string(),
+        signature: "zaHNns/mTteUjXqse0/WizwY+v7VEzh/8a1tcDkQPU4YYOuk+A/e7TE/LpUhR25zP5c9vK/Z1miLmsNn40sIUw==".to_string(),
         attributes: json_string.clone(),
         buy_metadata: buy_msg.clone(),
     });
@@ -1230,7 +1242,7 @@ fn set_public_key() {
     }
     // Phrase words - fiction artefact enjoy bicycle agent jungle another mesh item slam voice motion reflect code jewel tunnel glory hobby access that asthma ethics volcano cargo
     // Public Key: AqNQdMoVoy8Ub5/sh2q6UYk1Di1BTpm7hoL83wQe0nZL
-    // signature: btGp+2hXDFeiosEJsw2kp5r2KYlvyNcpQE6YsNh/Ln5wbU3ZkEN4szt7j75dR35pxD+RyBK1qIU4vDLMtjG8Yw==
+    // signature: gMyokP8J9N51ouzcq8nZ6SAR6zWYrXWqo1jtzFcrL718sxvFDKyOp2uqqNxSeitbiEU7jpj7To1rdDxVZPV2IA==
     let set_pubkey_msg = ExecuteMsg::<Extension>::SetPublicKey {
         public_key: "AqNQdMoVoy8Ub5/sh2q6UYk1Di1BTpm7hoL83wQe0nZL".to_string(),
     };
@@ -1266,9 +1278,10 @@ fn set_public_key() {
             assert!(false, "Should have failed")
         }
     }
+
     // this fails as we actually 'bought' the NFT in the first message. but it gets past the signature check so it works
     let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
-        signature: "btGp+2hXDFeiosEJsw2kp5r2KYlvyNcpQE6YsNh/Ln5wbU3ZkEN4szt7j75dR35pxD+RyBK1qIU4vDLMtjG8Yw==".to_string(),
+        signature: "gMyokP8J9N51ouzcq8nZ6SAR6zWYrXWqo1jtzFcrL718sxvFDKyOp2uqqNxSeitbiEU7jpj7To1rdDxVZPV2IA==".to_string(),
         attributes: json_string.clone(),
         buy_metadata: buy_msg.clone(),
     });
@@ -1281,5 +1294,138 @@ fn set_public_key() {
             assert!(false, "Unexpected Error {:?}", err)
         }
         _ => {}
+    }
+}
+#[test]
+fn set_status() {
+    let mut deps = mock_dependencies(&[]);
+    let contract = setup_contract(deps.as_mut());
+    let token_uri = "https://www.merriam-webster.com/dictionary/petrify".to_string();
+    let attributes: Vec<Trait> = vec![
+        Trait {
+            display_type: None,
+            trait_type: "gender".to_string(),
+            value: "male".to_string(),
+        },
+        Trait {
+            display_type: None,
+            trait_type: "name".to_string(),
+            value: "Jim Morrisson".to_string(),
+        },
+    ];
+    let extension = Metadata {
+        token_uri: token_uri.clone(),
+        image: None,
+        image_data: None,
+        external_url: None,
+        description: None,
+        name: None,
+        attributes: Some(attributes),
+        background_color: None,
+        animation_url: None,
+        youtube_url: None,
+        current_status: None,
+    };
+    let buy_msg = BuyExtension {
+        male_name: "James Dean".to_string(),
+        female_name: "Norma Rae".to_string(),
+    };
+    let json = serde_json_wasm::to_string(&extension);
+    assert!(json.is_ok(), "JSON unpacking failed");
+
+    let json_string = json.unwrap();
+
+    let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
+        signature: "zaHNns/mTteUjXqse0/WizwY+v7VEzh/8a1tcDkQPU4YYOuk+A/e7TE/LpUhR25zP5c9vK/Z1miLmsNn40sIUw==".to_string(),
+        attributes: json_string.clone(),
+        buy_metadata: buy_msg.clone(),
+    });
+    //good signature
+    let random = mock_info("random", &[Coin::new(3_000_000u128, "uluna")]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, mint_msg.clone());
+
+    match contract_exec {
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        Ok(t) => {
+            let token_id_opt = t
+                .attributes
+                .iter()
+                .find(|t| t.key == "token_id")
+                .map(|f| f.value.clone());
+            if let Some(token_id) = token_id_opt {
+                assert_eq!(token_id, "James Dean");
+
+                let res = contract.nft_info(deps.as_ref(), token_id.clone()).unwrap();
+                let status = res.extension.get_status();
+                assert!(status.is_some(), "Should have seen a status");
+                assert_eq!(status.unwrap(), "Alive and curious");
+                let set_status_msg = ExecuteMsg::<Extension>::SetTokenStatus {
+                    status: "Peeping the life fantastic".to_string(),
+                    token_id: token_id.clone(),
+                };
+                let random = mock_info("random", &[]);
+                let contract_exec =
+                    contract.execute(deps.as_mut(), mock_env(), random, set_status_msg.clone());
+                match contract_exec {
+                    Err(err) => {
+                        assert!(false, "Unexpected Error {:?}", err)
+                    }
+                    _ => {}
+                }
+                let res = contract.nft_info(deps.as_ref(), token_id.clone()).unwrap();
+                let status = res.extension.get_status();
+                assert!(status.is_some(), "Should have seen a status");
+                assert_eq!(status.unwrap(), "Peeping the life fantastic");
+                let random2 = mock_info("random2", &[]);
+                let set_status_msg2 = ExecuteMsg::<Extension>::SetTokenStatus {
+                    status: "Failing the life fantastic".to_string(),
+                    token_id: token_id.clone(),
+                };
+                let contract_exec =
+                    contract.execute(deps.as_mut(), mock_env(), random2, set_status_msg2.clone());
+                match contract_exec {
+                    Err(ContractError::Unauthorized {}) => {}
+                    Err(err) => {
+                        assert!(false, "Unexpected Error {:?}", err)
+                    }
+                    _ => {
+                        assert!(false, "Contract should not have worked")
+                    }
+                }
+                let res = contract.nft_info(deps.as_ref(), token_id.clone()).unwrap();
+                let status = res.extension.get_status();
+                assert!(status.is_some(), "Should have seen a status");
+                assert_eq!(status.unwrap(), "Peeping the life fantastic");
+                let admin_msg = mock_info(MINTER, &[]);
+                let set_status_msg2 = ExecuteMsg::<Extension>::SetTokenStatus {
+                    status: "Admin doing the override".to_string(),
+                    token_id: token_id.clone(),
+                };
+
+                let contract_exec = contract.execute(
+                    deps.as_mut(),
+                    mock_env(),
+                    admin_msg,
+                    set_status_msg2.clone(),
+                );
+                match contract_exec {
+                    Err(ContractError::Unauthorized {}) => {}
+                    Err(err) => {
+                        assert!(false, "Unexpected Error {:?}", err)
+                    }
+                    _ => {
+                        assert!(false, "Contract should not have worked")
+                    }
+                }
+                let res = contract.nft_info(deps.as_ref(), token_id.clone()).unwrap();
+                let status = res.extension.get_status();
+                assert!(status.is_some(), "Should have seen a status");
+                assert_eq!(status.unwrap(), "Peeping the life fantastic");
+            } else {
+                assert!(false, "Token ID not found")
+            }
+        }
     }
 }

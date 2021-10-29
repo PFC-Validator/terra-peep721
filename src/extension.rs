@@ -11,6 +11,8 @@ pub struct Trait {
 pub trait MetaDataPersonalization {
     fn get_decision_trait(&self, trait_type: &str) -> Option<Trait>;
     fn set_personalized_trait(&mut self, trait_type: &str, value: &str);
+    fn set_status(&mut self, status: &str);
+    fn get_status(&self) -> Option<String>;
     fn get_token_uri(&self) -> String;
 }
 
@@ -30,6 +32,7 @@ pub struct Metadata {
     pub background_color: Option<String>,
     pub animation_url: Option<String>,
     pub youtube_url: Option<String>,
+    pub current_status: Option<String>,
 }
 
 impl MetaDataPersonalization for Metadata {
@@ -67,6 +70,12 @@ impl MetaDataPersonalization for Metadata {
             //  self.attributes = Some(new_attr);
             self.attributes = Some(new_attr);
         }
+    }
+    fn set_status(&mut self, status: &str) {
+        self.current_status = Some(String::from(status))
+    }
+    fn get_status(&self) -> Option<String> {
+        self.current_status.clone()
     }
 }
 

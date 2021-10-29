@@ -119,6 +119,12 @@
             "null"
           ]
         },
+        "current_status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "description": {
           "type": [
             "string",

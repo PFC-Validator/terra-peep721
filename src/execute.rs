@@ -109,6 +109,9 @@ where
             ExecuteMsg::SetMintAmount { mint_amount } => {
                 self.set_mint_amount(deps, env, info, mint_amount)
             }
+            ExecuteMsg::SetTokenStatus { token_id, status } => {
+                self.set_status(deps, env, info, token_id, status)
+            }
         }
     }
 }
@@ -221,6 +224,7 @@ where
             let mut extension_copy: T = serde_json_wasm::from_str(&msg.attributes)?;
             let token_uri = extension_copy.get_token_uri();
             if let Some(token_id) = msg.buy_metadata.perform_mint(&mut extension_copy) {
+                extension_copy.set_status("Alive and curious");
                 // create the token
                 let token = TokenInfo {
                     owner: info.sender.clone(),
@@ -296,7 +300,7 @@ where
 
 impl<'a, T, C> Cw721Execute<T, C> for Cw721Contract<'a, T, C>
 where
-    T: Serialize + DeserializeOwned + Clone,
+    T: Serialize + DeserializeOwned + Clone + MetaDataPersonalization,
     C: CustomMsg,
 {
     type Err = ContractError;
@@ -426,7 +430,7 @@ where
 // helpers
 impl<'a, T, C> Cw721Contract<'a, T, C>
 where
-    T: Serialize + DeserializeOwned + Clone,
+    T: Serialize + DeserializeOwned + Clone + MetaDataPersonalization,
     C: CustomMsg,
 {
     pub fn _transfer_nft(
@@ -443,6 +447,24 @@ where
         // set owner and remove existing approvals
         token.owner = deps.api.addr_validate(recipient)?;
         token.approvals = vec![];
+        self.tokens.save(deps.storage, token_id, &token)?;
+        Ok(token)
+    }
+    pub fn _set_status(
+        &self,
+        deps: DepsMut,
+        env: &Env,
+        info: &MessageInfo,
+        token_id: &str,
+        status: &str,
+    ) -> Result<TokenInfo<T>, ContractError> {
+        let mut token = self.tokens.load(deps.storage, token_id)?;
+        // ensure we have permissions
+        self.check_can_send(deps.as_ref(), env, info, &token)?;
+        // set owner and remove existing approvals
+        //  token.owner = deps.api.addr_validate(recipient)?;
+        token.extension.set_status(status);
+        //   token.approvals = vec![];
         self.tokens.save(deps.storage, token_id, &token)?;
         Ok(token)
     }
@@ -554,5 +576,22 @@ where
             }
             None => Err(ContractError::Unauthorized {}),
         }
+    }
+
+    fn set_status(
+        &self,
+        deps: DepsMut,
+        env: Env,
+        info: MessageInfo,
+        token_id: String,
+        status: String,
+    ) -> Result<Response<C>, ContractError> {
+        self._set_status(deps, &env, &info, &token_id, &status)?;
+
+        Ok(Response::new()
+            .add_attribute("action", "set_status")
+            .add_attribute("sender", info.sender)
+            .add_attribute("status", status)
+            .add_attribute("token_id", token_id))
     }
 }
