@@ -198,10 +198,29 @@ where
             QueryMsg::AllTokens { start_after, limit } => {
                 to_binary(&self.all_tokens(deps, start_after, limit)?)
             }
+            QueryMsg::RangeTokens { start_after, limit } => {
+                to_binary(&self.page_tokens(deps, start_after, limit)?)
+            }
             QueryMsg::PublicKey {} => to_binary(&self.public_key(deps.storage)?),
             QueryMsg::MintAmount {} => to_binary(&self.mint_amount(deps.storage)?),
             QueryMsg::TotalSupply {} => to_binary(&self.max_issuance(deps.storage)?),
         }
+    }
+    fn page_tokens(
+        &self,
+        deps: Deps,
+        start_after: Option<String>,
+        limit: Option<u32>,
+    ) -> StdResult<TokensResponse> {
+        let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
+        let start = start_after.map(|addr| Bound::exclusive(addr.as_bytes()));
+        let tokens: StdResult<Vec<String>> = self
+            .tokens
+            .range(deps.storage, start, None, Order::Ascending)
+            .take(limit)
+            .map(|item| item.map(|(k, _)| String::from_utf8_lossy(&k).to_string()))
+            .collect();
+        Ok(TokensResponse { tokens: tokens? })
     }
 }
 

@@ -172,6 +172,13 @@ pub enum QueryMsg {
         start_after: Option<String>,
         limit: Option<u32>,
     },
+    /// With Enumerable extension.
+    /// Requires pagination. Lists all token_ids controlled by the contract.
+    /// Return type: TokensResponse.
+    RangeTokens {
+        start_after: Option<String>,
+        limit: Option<u32>,
+    },
 
     // Return the minter
     Minter {},
