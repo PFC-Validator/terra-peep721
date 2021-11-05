@@ -14,6 +14,8 @@ pub trait MetaDataPersonalization {
     fn set_status(&mut self, status: &str);
     fn get_status(&self) -> Option<String>;
     fn get_token_uri(&self) -> String;
+    fn get_image(&self, prefix: &str) -> Option<String>;
+    fn set_image(&mut self, image: Option<String>);
 }
 
 pub trait MetaPersonalize {
@@ -76,6 +78,18 @@ impl MetaDataPersonalization for Metadata {
     }
     fn get_status(&self) -> Option<String> {
         self.current_status.clone()
+    }
+    fn get_image(&self, prefix: &str) -> Option<String> {
+        return self.image.as_ref().map(|i| {
+            if i.starts_with("ipfs://") || i.starts_with("http") {
+                i.clone()
+            } else {
+                format!("{}{}", prefix, i)
+            }
+        });
+    }
+    fn set_image(&mut self, image: Option<String>) {
+        self.image = image
     }
 }
 

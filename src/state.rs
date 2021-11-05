@@ -23,6 +23,7 @@ where
     pub operators: Map<'a, (&'a Addr, &'a Addr), Expiration>,
     pub tokens: IndexedMap<'a, &'a str, TokenInfo<T>, TokenIndexes<'a, T>>,
     pub tokens_uri: IndexedMap<'a, &'a str, String, TokenIndexString<'a>>,
+    pub image_prefix: Item<'a, String>,
 
     pub(crate) _custom_response: PhantomData<C>,
 }
@@ -52,6 +53,7 @@ where
             "public_key",
             "mint_amount",
             "max_issuance",
+            "image_prefix",
         )
     }
 }
@@ -73,6 +75,7 @@ where
         public_key: &'a str,
         mint_amount: &'a str,
         max_issuance: &'a str,
+        image_prefix: &'a str,
     ) -> Self {
         let indexes = TokenIndexes {
             owner: MultiIndex::new(token_owner_idx, tokens_key, tokens_owner_key),
@@ -90,6 +93,7 @@ where
             operators: Map::new(operator_key),
             tokens: IndexedMap::new(tokens_key, indexes),
             tokens_uri: IndexedMap::new(tokens_uri_key, uri_indexes),
+            image_prefix: Item::new(image_prefix),
             _custom_response: PhantomData,
         }
     }
@@ -107,6 +111,10 @@ where
     }
     pub fn max_issuance(&self, storage: &dyn Storage) -> StdResult<u64> {
         Ok(self.max_issuance.may_load(storage)?.unwrap_or_default())
+    }
+
+    pub fn image_prefix(&self, storage: &dyn Storage) -> StdResult<String> {
+        Ok(self.image_prefix.may_load(storage)?.unwrap_or_default())
     }
 
     pub fn increment_tokens(&self, storage: &mut dyn Storage) -> StdResult<u64> {

@@ -36,10 +36,7 @@ where
     T: MetaDataPersonalization,
 {
     /// Transfer is a base message to move a token to another account without triggering actions
-    TransferNft {
-        recipient: String,
-        token_id: String,
-    },
+    TransferNft { recipient: String, token_id: String },
     /// Send is a base message to transfer a token to a contract and trigger an action
     /// on the receiving contract.
     SendNft {
@@ -55,10 +52,7 @@ where
         expires: Option<Expiration>,
     },
     /// Remove previously granted Approval
-    Revoke {
-        spender: String,
-        token_id: String,
-    },
+    Revoke { spender: String, token_id: String },
     /// Allows operator to transfer / send any token from the owner's account.
     /// If expiration is set, then this allowance has a time/height limit
     ApproveAll {
@@ -66,24 +60,20 @@ where
         expires: Option<Expiration>,
     },
     /// Remove previously granted ApproveAll permission
-    RevokeAll {
-        operator: String,
-    },
+    RevokeAll { operator: String },
 
     /// Mint a new NFT, can only be called by the contract minter
     Mint(MintMsg<T>),
     /// Allow a buyer to mint a NFT directly
     Buy(BuyMsg),
-    SetPublicKey {
-        public_key: String,
-    },
-    SetMintAmount {
-        mint_amount: u64,
-    },
-    SetTokenStatus {
-        status: String,
-        token_id: String,
-    },
+    /// Owner function: change public key
+    SetPublicKey { public_key: String },
+    /// Owner function: change mint price
+    SetMintAmount { mint_amount: u64 },
+    /// User message: allow owner to change status field of NFT
+    SetTokenStatus { status: String, token_id: String },
+    /// Owner message: change prefix for images. defaults to ipfs://
+    SetImagePrefix { prefix: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -188,6 +178,8 @@ pub enum QueryMsg {
     MintAmount {},
     // Return the total supply
     TotalSupply {},
+    // Return the prefix for the images. defaults to ipfs://
+    ImagePrefix {},
 }
 
 /// Shows who can mint these tokens

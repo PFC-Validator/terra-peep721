@@ -109,6 +109,7 @@ where
             ExecuteMsg::SetMintAmount { mint_amount } => {
                 self.set_mint_amount(deps, env, info, mint_amount)
             }
+            ExecuteMsg::SetImagePrefix { prefix } => self.set_image_prefix(deps, env, info, prefix),
             ExecuteMsg::SetTokenStatus { token_id, status } => {
                 self.set_status(deps, env, info, token_id, status)
             }
@@ -295,6 +296,24 @@ where
             .add_attribute("action", "approve")
             .add_attribute("sender", info.sender)
             .add_attribute("mint_amount", mint_amount_string))
+    }
+    pub fn set_image_prefix(
+        &self,
+        deps: DepsMut,
+        _env: Env,
+        info: MessageInfo,
+        prefix: String,
+    ) -> Result<Response<C>, ContractError> {
+        let minter = self.minter.load(deps.storage)?;
+
+        if info.sender != minter {
+            return Err(ContractError::Unauthorized {});
+        }
+        self.image_prefix.save(deps.storage, &prefix)?;
+        Ok(Response::new()
+            .add_attribute("action", "approve")
+            .add_attribute("sender", info.sender)
+            .add_attribute("image_prefix", prefix))
     }
 }
 

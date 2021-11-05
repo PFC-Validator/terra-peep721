@@ -287,6 +287,18 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "image_prefix"
+      ],
+      "properties": {
+        "image_prefix": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     }
   ]
 }

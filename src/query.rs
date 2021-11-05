@@ -3,6 +3,7 @@ use serde::Serialize;
 
 use cosmwasm_std::{to_binary, Binary, BlockInfo, Deps, Env, Order, Pair, StdError, StdResult};
 
+use crate::extension::MetaDataPersonalization;
 use cw0::maybe_addr;
 use cw721::{
     AllNftInfoResponse, ApprovedForAllResponse, ContractInfoResponse, CustomMsg, Cw721Query,
@@ -18,7 +19,7 @@ const MAX_LIMIT: u32 = 30;
 
 impl<'a, T, C> Cw721Query<T> for Cw721Contract<'a, T, C>
 where
-    T: Serialize + DeserializeOwned + Clone,
+    T: Serialize + DeserializeOwned + Clone + MetaDataPersonalization,
     C: CustomMsg,
 {
     fn contract_info(&self, deps: Deps) -> StdResult<ContractInfoResponse> {
@@ -31,11 +32,22 @@ where
     }
 
     fn nft_info(&self, deps: Deps, token_id: String) -> StdResult<NftInfoResponse<T>> {
+        let prefix = self.image_prefix(deps.storage)?;
         let info = self.tokens.load(deps.storage, &token_id)?;
-        Ok(NftInfoResponse {
-            token_uri: info.token_uri,
-            extension: info.extension,
-        })
+        if let Some(image) = info.extension.get_image(&prefix) {
+            let mut extension = info.extension.clone();
+            extension.set_image(Some(image));
+
+            Ok(NftInfoResponse {
+                token_uri: info.token_uri,
+                extension,
+            })
+        } else {
+            Ok(NftInfoResponse {
+                token_uri: info.token_uri,
+                extension: info.extension,
+            })
+        }
     }
 
     fn owner_of(
@@ -129,7 +141,16 @@ where
         token_id: String,
         include_expired: bool,
     ) -> StdResult<AllNftInfoResponse<T>> {
+        let prefix = self.image_prefix.load(deps.storage)?;
         let info = self.tokens.load(deps.storage, &token_id)?;
+        let extension = if let Some(image) = info.extension.get_image(&prefix) {
+            let mut extension = info.extension.clone();
+            extension.set_image(Some(image));
+            extension
+        } else {
+            info.extension.clone()
+        };
+
         Ok(AllNftInfoResponse {
             access: OwnerOfResponse {
                 owner: info.owner.to_string(),
@@ -137,7 +158,7 @@ where
             },
             info: NftInfoResponse {
                 token_uri: info.token_uri,
-                extension: info.extension,
+                extension,
             },
         })
     }
@@ -145,7 +166,7 @@ where
 
 impl<'a, T, C> Cw721Contract<'a, T, C>
 where
-    T: Serialize + DeserializeOwned + Clone,
+    T: Serialize + DeserializeOwned + Clone + MetaDataPersonalization,
     C: CustomMsg,
 {
     pub fn minter(&self, deps: Deps) -> StdResult<MinterResponse> {
@@ -203,6 +224,7 @@ where
             QueryMsg::PublicKey {} => to_binary(&self.public_key(deps.storage)?),
             QueryMsg::MintAmount {} => to_binary(&self.mint_amount(deps.storage)?),
             QueryMsg::TotalSupply {} => to_binary(&self.max_issuance(deps.storage)?),
+            QueryMsg::ImagePrefix {} => to_binary(&self.image_prefix(deps.storage)?),
         }
     }
     fn page_tokens(

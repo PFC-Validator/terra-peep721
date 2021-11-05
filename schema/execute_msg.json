@@ -196,6 +196,7 @@
       "additionalProperties": false
     },
     {
+      "description": "Owner function: change public key",
       "type": "object",
       "required": [
         "set_public_key"
@@ -216,6 +217,7 @@
       "additionalProperties": false
     },
     {
+      "description": "Owner function: change mint price",
       "type": "object",
       "required": [
         "set_mint_amount"
@@ -238,6 +240,7 @@
       "additionalProperties": false
     },
     {
+      "description": "User message: allow owner to change status field of NFT",
       "type": "object",
       "required": [
         "set_token_status"
@@ -254,6 +257,27 @@
               "type": "string"
             },
             "token_id": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Owner message: change prefix for images. defaults to ipfs://",
+      "type": "object",
+      "required": [
+        "set_image_prefix"
+      ],
+      "properties": {
+        "set_image_prefix": {
+          "type": "object",
+          "required": [
+            "prefix"
+          ],
+          "properties": {
+            "prefix": {
               "type": "string"
             }
           }
