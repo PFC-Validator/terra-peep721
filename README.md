@@ -33,7 +33,7 @@ It has a few useful contract level functions, that can be queried:
    * **set_nft_contract_keybase_verification**. This allows the NFT owner to verify their ownership of the NFT collection via a keybase signature. This allows people to verify the authenticity of the collection, and it's not a 2nd rate clone
    * **set_image_prefix**. Allows the NFT owner to change the image prefix, to where the image URLs live. If they want to switch IPFS providers for example. This may not be compatible with caching strategies used by current listing providers.
 
-There are also queries to to query non-changeabel items :
+There are also queries to query immutable items: (note it is immutable in this level, there is nothing stopping someone forking this and changing it)
 * **total_supply**. Maximum amount of tokens that can be minted.
 
 ## TODO
