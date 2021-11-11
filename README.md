@@ -36,6 +36,44 @@ It has a few useful contract level functions, that can be queried:
 There are also queries to query immutable items: (note it is immutable in this level, there is nothing stopping someone forking this and changing it)
 * **total_supply**. Maximum amount of tokens that can be minted.
 
+### How to build
+* `cargo build` command will build the contract as normal rustaceans expect
+* `cargo unit-test` will run the tests.
+* `cargo optimize` or `cargo optimize-w32` will optimize the contract for potential upload onto the chain. Yes. you can build on windows, and it's great!
+
+### How to upload it to the chain
+```sh
+terrad tx wasm store artifacts/terra_peep721.wasm --chain-id bombay-12 --from your-wallet --fees 391868uusd --gas auto -y -b sync --gas-adjustment 1.2
+
+```
+this will upload the contract to the chain, and provide a `code id`. This can be used to either instantiate the contract, or migrate the existing contract
+to instantiate it.
+```shell
+minter=terra1d85ncnvn822u5lul9kf8430dd3chyjd3ka2f98
+code_id=12345
+json='{"name":"your name","symbol":"your symbol","minter":"${minter}","public_key":"A8O7tqWAvsKW9XA7p2W8YZdIZmmadf9qoQmRiZq8xpvl","mint_amount":2000000,"max_issuance":10000}'
+terrad tx wasm instantiate ${code_id} ${json} --chain-id bombay-12 --gas auto --from your-wallet --fees  5627uluna --admin ${minter}
+
+```
+the output of  instantiate should provide you with a contract address. this is used in your applications.
+see [finder](https://finder.terra.money/testnet/tx/CB141B83A90D04EC71EFFF0D0148F7D4D63C5B0FC487413FB76267CD73EF49BD) for an example.
+to upgrade, you will need to migrate the contract to the new `code_id`
+
+for example:
+```shell
+terrad tx wasm migrate terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav 18416 '{}'  --from terrapeep --chain-id bombay-12 --fees 2640uluna
+```
+you should probably set the default image source, and NFT contract info, and a keybase signed message.
+I use 'TerraPeeps Bombay Contract is at terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav'. As long as you have the contract address signed in the message, it should be sufficent.
+
+```shell
+terrad tx wasm execute terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav  '{"set_image_prefix":{"prefix":"ipfs://"}}' --from terrapeep --chain-id bombay-12 --fees 2640uluna
+contract_info='{"set_nft_contract_info":{"listing": [{"label":"knowhere","listing_uri":"https://knowhere.art/collection/terra1t0l0sz0efnr7cm3hxked7nn2x7xx5syw02k8tc"}],                   "src":"https://example.com/logo",                   "banner_src": "https://example.com/banner",                   "descriptions": "Peeps are the social NFT",                   "discord":"https://discord.gg/rF5T86hVMG",                   "github": null,                   "telegram":null,                   "twitter":"https://twitter.com/TerraPeep"}}'
+
+terrad tx wasm execute terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav  ${contract_info} --from terrapeep --chain-id bombay-12 --fees 2640uluna
+terrad tx wasm execute terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav  '{"set_nft_contract_keybase_verification":{"message":"BEGIN KEYBASE SALTPACK ENCRYPTED MESSAGE. keDIDMQWYvVR58B FTfTeDQNI531bT7 WTI8PEuoKWxELk1 MFJeAHVqx4s0efe gkGGapAZTDrPVYw CGLVhvxPExCUKp1 NTfmSyoZAbFRuqg XWKMsHhyJgzViNo iyk60GT3AUeZIrc 9ibie85pwi4MD0v Sbld52zopYnIxVj lhxHhC9T2VGUyNO lQZu2KvmMa9IrmI MrNLyEtcT9Ra1Pd ZQ02Qin64JkMXWj Hi8k6TCngHKlgvl sWGQayfpGPzUNkq XYqEpwXsqc60dXK FRqXsoSBRj7KNJ8 3TuSFxFv3B8ycY4 GPtLPhprzFyXbTl KLwRLNnExQdF7bw kaFXYKE41hE0diV J42bZj5tluOfsHu xhfpMdb54tWiVFl Pdear6Jp05S7ahI jHD74OtZLTeTMZo UEZwJpUmuzHpAmG NeBgjCqgv41GmKW 1eGIPAJnGctWbpX I73Z32AwtkpDxtO Pz. END KEYBASE SALTPACK ENCRYPTED MESSAGE."}}' --from terrapeep --chain-id bombay-12 --fees 2640uluna
+
+```
 ## TODO
 - [x] Add a `set_sign` function to allow the owner to set the public verification key
 - [x] Add a `set_price` function to allow the owner to set auction price
