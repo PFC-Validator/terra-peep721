@@ -64,7 +64,9 @@ for example:
 terrad tx wasm migrate terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav 18416 '{}'  --from terrapeep --chain-id bombay-12 --fees 2640uluna
 ```
 you should probably set the default image source, NFT contract info, and a keybase signed message.
-I use 'TerraPeeps Bombay Contract is at terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav'. As long as you have the contract address signed in the message, it should be sufficent.
+I use 'TerraPeeps Bombay Contract is at terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav'.
+
+As long as you have the contract address signed in the message, it should be sufficient.
 
 ```shell
 terrad tx wasm execute terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav  '{"set_image_prefix":{"prefix":"ipfs://"}}' --from terrapeep --chain-id bombay-12 --fees 2640uluna
