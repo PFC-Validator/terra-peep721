@@ -63,7 +63,7 @@ for example:
 ```shell
 terrad tx wasm migrate terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav 18416 '{}'  --from terrapeep --chain-id bombay-12 --fees 2640uluna
 ```
-you should probably set the default image source, and NFT contract info, and a keybase signed message.
+you should probably set the default image source, NFT contract info, and a keybase signed message.
 I use 'TerraPeeps Bombay Contract is at terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav'. As long as you have the contract address signed in the message, it should be sufficent.
 
 ```shell
