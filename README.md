@@ -17,7 +17,7 @@ To instantiate you need to specify:
 - **name**: standard cw721 name
 - **symbol**: standard cw721 symbol
 - **minter**: the admin account of the NFT.
-- **public_key**:" the public key of the attribute signer. This does not have to be the same as the minter. (It shouldn't be)
+- **public_key**: the public key of the attribute signer. This does not have to be the same as the minter. (It shouldn't be)
 - **mint_amount**: the price to mint a token. in uluna (1 million uluna = 1 luna)
 - **max_issuance**: maximum number of tokens that can be minted. This is not alterable in the current implementation.
 
