@@ -1,6 +1,6 @@
 # TerraPeep721
 ## TL;DR
-This is a working CW721 contract for the [Terra](https://terra.money/) blockchain, and is in active use by the [TerraPeep](https://terrapeeps.com) project.
+This is a working CW721 contract for the [Terra](https://terra.money/) blockchain, and is in active use by the [TerraPeeps](https://terrapeeps.com) project.
 
 It serves TerraPeeps needs. It may serve yours.
 
