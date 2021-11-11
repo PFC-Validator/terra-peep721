@@ -10,7 +10,7 @@ use crate::error::ContractError;
 use crate::extension::{MetaDataPersonalization, MetaPersonalize};
 
 use crate::msg::{BuyMsg, ExecuteMsg, InstantiateMsg, MintMsg};
-use crate::state::{Approval, Cw721Contract, NFTListing, NFTTraitSummary, TokenInfo};
+use crate::state::{Approval, Cw721Contract, NftListing, NftTraitSummary, TokenInfo};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:terra-peep721";
@@ -371,7 +371,7 @@ where
         deps: DepsMut,
         _env: Env,
         info: MessageInfo,
-        trait_map: Vec<(String, Vec<NFTTraitSummary>)>,
+        trait_map: Vec<(String, Vec<NftTraitSummary>)>,
     ) -> Result<Response<C>, ContractError> {
         let minter = self.minter.load(deps.storage)?;
 
@@ -403,14 +403,14 @@ where
         github: Option<String>,
         discord: Option<String>,
         telegram: Option<String>,
-        listing: Vec<NFTListing>,
+        listing: Vec<NftListing>,
     ) -> Result<Response<C>, ContractError> {
         let minter = self.minter.load(deps.storage)?;
 
         if info.sender != minter {
             return Err(ContractError::Unauthorized {});
         }
-        let nft_contract_info = crate::state::NFTContractInfo {
+        let nft_contract_info = crate::state::NftContractInfo {
             description,
             src,
             banner_src,

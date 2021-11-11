@@ -10,18 +10,18 @@ use cw721::{ContractInfoResponse, CustomMsg, Cw721, Expiration};
 use cw_storage_plus::{Index, IndexList, IndexedMap, Item, Map, MultiIndex};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct NFTListing {
+pub struct NftListing {
     pub label: String,
     pub listing_uri: String,
 }
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct NFTTraitSummary {
+pub struct NftTraitSummary {
     pub label: String,
     pub value: Decimal,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct NFTContractInfo {
+pub struct NftContractInfo {
     pub description: Option<String>,
     pub src: Option<String>,
     pub banner_src: Option<String>,
@@ -29,11 +29,11 @@ pub struct NFTContractInfo {
     pub github: Option<String>,
     pub discord: Option<String>,
     pub telegram: Option<String>,
-    pub listing: Vec<NFTListing>,
+    pub listing: Vec<NftListing>,
 }
-impl Default for NFTContractInfo {
+impl Default for NftContractInfo {
     fn default() -> Self {
-        NFTContractInfo {
+        NftContractInfo {
             description: None,
             src: None,
             banner_src: None,
@@ -51,8 +51,8 @@ where
     T: Serialize + DeserializeOwned + Clone,
 {
     pub contract_info: Item<'a, ContractInfoResponse>,
-    pub nft_contract_info: Item<'a, NFTContractInfo>,
-    pub trait_map: Item<'a, Vec<(String, Vec<NFTTraitSummary>)>>,
+    pub nft_contract_info: Item<'a, NftContractInfo>,
+    pub trait_map: Item<'a, Vec<(String, Vec<NftTraitSummary>)>>,
     pub keybase_message: Item<'a, Option<String>>,
     pub minter: Item<'a, Addr>,
     pub token_count: Item<'a, u64>,
@@ -167,7 +167,7 @@ where
         Ok(self.image_prefix.may_load(storage)?.unwrap_or_default())
     }
 
-    pub fn nft_contract_info(&self, storage: &dyn Storage) -> StdResult<NFTContractInfo> {
+    pub fn nft_contract_info(&self, storage: &dyn Storage) -> StdResult<NftContractInfo> {
         Ok(self
             .nft_contract_info
             .may_load(storage)?
@@ -176,7 +176,7 @@ where
     pub fn nft_contract_trait_map(
         &self,
         storage: &dyn Storage,
-    ) -> StdResult<Vec<(String, Vec<NFTTraitSummary>)>> {
+    ) -> StdResult<Vec<(String, Vec<NftTraitSummary>)>> {
         Ok(self.trait_map.may_load(storage)?.unwrap_or_default())
     }
     pub fn nft_contract_keybase_verification(

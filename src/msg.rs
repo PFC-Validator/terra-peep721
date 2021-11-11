@@ -2,7 +2,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::extension::MetaDataPersonalization;
-use crate::state::{NFTListing, NFTTraitSummary};
+use crate::state::{NftListing, NftTraitSummary};
 use crate::BuyExtension;
 use cosmwasm_std::Binary;
 use cw721::Expiration;
@@ -85,11 +85,11 @@ where
         github: Option<String>,
         discord: Option<String>,
         telegram: Option<String>,
-        listing: Vec<NFTListing>,
+        listing: Vec<NftListing>,
     },
     /// Owner message: Set information about the NFT Traits
     SetNftContractTraitInfo {
-        trait_map: Vec<(String, Vec<NFTTraitSummary>)>,
+        trait_map: Vec<(String, Vec<NftTraitSummary>)>,
     },
     /// Owner message: Set keybase verification string
     SetNftContractKeybaseVerification { message: String },

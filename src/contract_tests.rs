@@ -13,7 +13,7 @@ use cw721::{
 
 use crate::extension::{MetaDataPersonalization, Metadata, Trait};
 use crate::msg::BuyMsg;
-use crate::state::{NFTListing, NFTTraitSummary};
+use crate::state::{NftListing, NftTraitSummary};
 use crate::{
     BuyExtension, ContractError, Cw721Contract, ExecuteMsg, Extension, InstantiateMsg, MintMsg,
     QueryMsg,
@@ -1450,11 +1450,11 @@ fn set_nft_contract_info() {
         discord: None,
         telegram: None,
         listing: vec![
-            NFTListing {
+            NftListing {
                 label: "XYZ".to_string(),
                 listing_uri: "SomeURL".to_string(),
             },
-            NFTListing {
+            NftListing {
                 label: "ABC".to_string(),
                 listing_uri: "Some Other URL".to_string(),
             },
@@ -1536,11 +1536,11 @@ fn set_nft_trait_map() {
             (
                 "Attribute1".to_string(),
                 vec![
-                    NFTTraitSummary {
+                    NftTraitSummary {
                         label: "A".to_string(),
                         value: Decimal::from_str("0.90").unwrap(),
                     },
-                    NFTTraitSummary {
+                    NftTraitSummary {
                         label: "B".to_string(),
                         value: Decimal::from_str("0.10").unwrap(),
                     },
@@ -1549,15 +1549,15 @@ fn set_nft_trait_map() {
             (
                 "Attribute2".to_string(),
                 vec![
-                    NFTTraitSummary {
+                    NftTraitSummary {
                         label: "m".to_string(),
                         value: Decimal::from_str("0.40").unwrap(),
                     },
-                    NFTTraitSummary {
+                    NftTraitSummary {
                         label: "n".to_string(),
                         value: Decimal::from_str("0.10").unwrap(),
                     },
-                    NFTTraitSummary {
+                    NftTraitSummary {
                         label: "0".to_string(),
                         value: Decimal::from_str("0.10").unwrap(),
                     },
