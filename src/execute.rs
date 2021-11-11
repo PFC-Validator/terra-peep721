@@ -1,10 +1,13 @@
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128};
+use cosmwasm_std::{
+    BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
+};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
 use cw2::set_contract_version;
 use cw721::{ContractInfoResponse, CustomMsg, Cw721Execute, Cw721ReceiveMsg, Expiration};
+use terraswap::querier::query_balance;
 
 use crate::error::ContractError;
 use crate::extension::{MetaDataPersonalization, MetaPersonalize};
@@ -142,6 +145,7 @@ where
             ExecuteMsg::SetNftContractKeybaseVerification { message } => {
                 self.set_nft_keybase_verification(deps, env, info, message)
             }
+            ExecuteMsg::Sweep { denom } => self.sweep(deps, env, info, denom),
         }
     }
 }
@@ -241,9 +245,6 @@ where
         //println!("{}", hash_message);
         let hash = Sha256::digest(hash_message.as_bytes());
 
-        // let hash_b64 = base64::encode(&hash);
-        //  println!("String:{}", msg.attributes);
-        //  println!("HASH:{}", hash_b64);
         let signature = base64::decode(&msg.signature).unwrap();
 
         let result = deps
@@ -432,6 +433,30 @@ where
             }
             Err(e) => Err(ContractError::JsonSerError(e)),
         }
+    }
+    pub fn sweep(
+        &self,
+        deps: DepsMut,
+        env: Env,
+        info: MessageInfo,
+        denom: String,
+    ) -> Result<Response<C>, ContractError> {
+        let minter = self.minter.load(deps.storage)?;
+
+        if info.sender != minter {
+            return Err(ContractError::Unauthorized {});
+        }
+
+        let amount = query_balance(&deps.querier, env.contract.address, denom.clone())?;
+        if amount.is_zero() {
+            return Err(ContractError::NoFunds {});
+        }
+        Ok(Response::new()
+            .add_attribute("sweep", denom.clone())
+            .add_message(CosmosMsg::Bank(BankMsg::Send {
+                to_address: info.sender.to_string(),
+                amount: vec![Coin { denom, amount }],
+            })))
     }
 }
 

@@ -11,6 +11,8 @@ pub enum ContractError {
     Unauthorized {},
     #[error("Funds Missing or insufficient")]
     Funds {},
+    #[error("No Balance in that denomination")]
+    NoFunds {},
     #[error("Signature doesn't match")]
     BadSignature {},
 

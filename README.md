@@ -94,4 +94,5 @@ let json = r#"random/{"token_uri":"https://www.merriam-webster.com/dictionary/pe
 ## TODO
 - [x] Add a `set_sign` function to allow the owner to set the public verification key
 - [x] Add a `set_price` function to allow the owner to set auction price
-- [ ] Add a 'sweep' function to allow the owner to transfer all funds to another account
+- [x] Add a 'sweep' function to allow the owner to transfer all funds to another account
+

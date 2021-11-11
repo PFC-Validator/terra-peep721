@@ -196,6 +196,27 @@
       "additionalProperties": false
     },
     {
+      "description": "Owner function: Sends coins in the contract to admin",
+      "type": "object",
+      "required": [
+        "sweep"
+      ],
+      "properties": {
+        "sweep": {
+          "type": "object",
+          "required": [
+            "denom"
+          ],
+          "properties": {
+            "denom": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "Owner function: change public key",
       "type": "object",
       "required": [
@@ -325,7 +346,7 @@
             "listing": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/NFTListing"
+                "$ref": "#/definitions/NftListing"
               }
             },
             "src": {
@@ -375,7 +396,7 @@
                   {
                     "type": "array",
                     "items": {
-                      "$ref": "#/definitions/NFTTraitSummary"
+                      "$ref": "#/definitions/NftTraitSummary"
                     }
                   }
                 ],
@@ -613,7 +634,7 @@
         }
       }
     },
-    "NFTListing": {
+    "NftListing": {
       "type": "object",
       "required": [
         "label",
@@ -628,7 +649,7 @@
         }
       }
     },
-    "NFTTraitSummary": {
+    "NftTraitSummary": {
       "type": "object",
       "required": [
         "label",

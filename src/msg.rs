@@ -68,6 +68,8 @@ where
     Mint(MintMsg<T>),
     /// Allow a buyer to mint a NFT directly
     Buy(BuyMsg),
+    /// Owner function: Sends coins in the contract to admin
+    Sweep { denom: String },
     /// Owner function: change public key
     SetPublicKey { public_key: String },
     /// Owner function: change mint price

@@ -1594,3 +1594,101 @@ fn set_nft_trait_map() {
         }
     }
 }
+
+#[test]
+fn do_sweep() {
+    let mut deps = mock_dependencies(&[]);
+    let contract = setup_contract(deps.as_mut());
+
+    let sweep_msg = ExecuteMsg::Sweep {
+        denom: "uluna".to_string(),
+    };
+    let random = mock_info("random", &[]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, sweep_msg.clone());
+    match contract_exec {
+        Err(ContractError::Unauthorized {}) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        Ok(_) => {
+            assert!(false, "Unexpected OK")
+        }
+    }
+
+    let minter = mock_info(MINTER, &[]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), minter, sweep_msg.clone());
+    match contract_exec {
+        Err(ContractError::NoFunds {}) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        Ok(_) => {
+            assert!(false, "Unexpected OK")
+        }
+    }
+
+    let token_uri = "https://www.merriam-webster.com/dictionary/petrify".to_string();
+    let attributes: Vec<Trait> = vec![
+        Trait {
+            display_type: None,
+            trait_type: "gender".to_string(),
+            value: "male".to_string(),
+        },
+        Trait {
+            display_type: None,
+            trait_type: "name".to_string(),
+            value: "Jim Morrisson".to_string(),
+        },
+    ];
+    let extension = Metadata {
+        token_uri: token_uri.clone(),
+        image: None,
+        image_data: None,
+        external_url: None,
+        description: None,
+        name: None,
+        attributes: Some(attributes),
+        background_color: None,
+        animation_url: None,
+        youtube_url: None,
+        current_status: None,
+    };
+    let buy_msg = BuyExtension {
+        male_name: "James Dean".to_string(),
+        female_name: "Norma Rae".to_string(),
+    };
+    let json = serde_json_wasm::to_string(&extension);
+    assert!(json.is_ok(), "JSON unpacking failed");
+
+    let json_string = json.unwrap();
+
+    let mint_msg = ExecuteMsg::<Extension>::Buy(BuyMsg {
+        signature: "zaHNns/mTteUjXqse0/WizwY+v7VEzh/8a1tcDkQPU4YYOuk+A/e7TE/LpUhR25zP5c9vK/Z1miLmsNn40sIUw==".to_string(),
+        attributes: json_string.clone(),
+        buy_metadata: buy_msg.clone(),
+    });
+    //good signature
+    let random = mock_info("random", &[Coin::new(3_000_000u128, "uluna")]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, mint_msg.clone());
+
+    match contract_exec {
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        Ok(_) => {}
+    }
+    let sweep_msg = ExecuteMsg::Sweep {
+        denom: "uusd".to_string(),
+    };
+    let minter = mock_info(MINTER, &[]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), minter, sweep_msg.clone());
+    match contract_exec {
+        Err(ContractError::NoFunds {}) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        Ok(_) => {
+            assert!(false, "Unexpected OK")
+        }
+    }
+}
