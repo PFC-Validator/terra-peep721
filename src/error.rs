@@ -28,6 +28,8 @@ pub enum ContractError {
     #[error(transparent)]
     JsonError(#[from] serde_json_wasm::de::Error),
     #[error(transparent)]
+    JsonSerError(#[from] serde_json_wasm::ser::Error),
+    #[error(transparent)]
     CryptoVerify(#[from] VerificationError),
     #[error("Token ID Can't be set?")]
     BadTokenId {},

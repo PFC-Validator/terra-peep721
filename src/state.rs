@@ -3,17 +3,57 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
-use cosmwasm_std::{Addr, BlockInfo, StdResult, Storage};
+use cosmwasm_std::{Addr, BlockInfo, Decimal, StdResult, Storage};
 
 use crate::extension::MetaDataPersonalization;
 use cw721::{ContractInfoResponse, CustomMsg, Cw721, Expiration};
 use cw_storage_plus::{Index, IndexList, IndexedMap, Item, Map, MultiIndex};
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+pub struct NFTListing {
+    pub label: String,
+    pub listing_uri: String,
+}
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+pub struct NFTTraitSummary {
+    pub label: String,
+    pub value: Decimal,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+pub struct NFTContractInfo {
+    pub description: Option<String>,
+    pub src: Option<String>,
+    pub banner_src: Option<String>,
+    pub twitter: Option<String>,
+    pub github: Option<String>,
+    pub discord: Option<String>,
+    pub telegram: Option<String>,
+    pub listing: Vec<NFTListing>,
+}
+impl Default for NFTContractInfo {
+    fn default() -> Self {
+        NFTContractInfo {
+            description: None,
+            src: None,
+            banner_src: None,
+            twitter: None,
+            github: None,
+            discord: None,
+            telegram: None,
+            listing: vec![],
+        }
+    }
+}
 
 pub struct Cw721Contract<'a, T, C>
 where
     T: Serialize + DeserializeOwned + Clone,
 {
     pub contract_info: Item<'a, ContractInfoResponse>,
+    pub nft_contract_info: Item<'a, NFTContractInfo>,
+    pub trait_map: Item<'a, Vec<(String, Vec<NFTTraitSummary>)>>,
+    pub keybase_message: Item<'a, Option<String>>,
     pub minter: Item<'a, Addr>,
     pub token_count: Item<'a, u64>,
     pub public_key: Item<'a, String>,
@@ -54,6 +94,9 @@ where
             "mint_amount",
             "max_issuance",
             "image_prefix",
+            "nft_contract_info",
+            "trait_map",
+            "keybase_message",
         )
     }
 }
@@ -76,6 +119,9 @@ where
         mint_amount: &'a str,
         max_issuance: &'a str,
         image_prefix: &'a str,
+        nft_contract_info_key: &'a str,
+        trait_map_key: &'a str,
+        keybase_message_key: &'a str,
     ) -> Self {
         let indexes = TokenIndexes {
             owner: MultiIndex::new(token_owner_idx, tokens_key, tokens_owner_key),
@@ -94,6 +140,9 @@ where
             tokens: IndexedMap::new(tokens_key, indexes),
             tokens_uri: IndexedMap::new(tokens_uri_key, uri_indexes),
             image_prefix: Item::new(image_prefix),
+            nft_contract_info: Item::new(nft_contract_info_key),
+            trait_map: Item::new(trait_map_key),
+            keybase_message: Item::new(keybase_message_key),
             _custom_response: PhantomData,
         }
     }
@@ -109,12 +158,32 @@ where
     pub fn mint_amount(&self, storage: &dyn Storage) -> StdResult<u64> {
         Ok(self.mint_amount.may_load(storage)?.unwrap_or_default())
     }
+
     pub fn max_issuance(&self, storage: &dyn Storage) -> StdResult<u64> {
         Ok(self.max_issuance.may_load(storage)?.unwrap_or_default())
     }
 
     pub fn image_prefix(&self, storage: &dyn Storage) -> StdResult<String> {
         Ok(self.image_prefix.may_load(storage)?.unwrap_or_default())
+    }
+
+    pub fn nft_contract_info(&self, storage: &dyn Storage) -> StdResult<NFTContractInfo> {
+        Ok(self
+            .nft_contract_info
+            .may_load(storage)?
+            .unwrap_or_default())
+    }
+    pub fn nft_contract_trait_map(
+        &self,
+        storage: &dyn Storage,
+    ) -> StdResult<Vec<(String, Vec<NFTTraitSummary>)>> {
+        Ok(self.trait_map.may_load(storage)?.unwrap_or_default())
+    }
+    pub fn nft_contract_keybase_verification(
+        &self,
+        storage: &dyn Storage,
+    ) -> StdResult<Option<String>> {
+        Ok(self.keybase_message.may_load(storage)?.unwrap_or_default())
     }
 
     pub fn increment_tokens(&self, storage: &mut dyn Storage) -> StdResult<u64> {

@@ -2,9 +2,11 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::extension::MetaDataPersonalization;
+use crate::state::{NFTListing, NFTTraitSummary};
 use crate::BuyExtension;
 use cosmwasm_std::Binary;
 use cw721::Expiration;
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct MigrateMsg {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -74,6 +76,23 @@ where
     SetTokenStatus { status: String, token_id: String },
     /// Owner message: change prefix for images. defaults to ipfs://
     SetImagePrefix { prefix: String },
+    /// Owner message: Set information about the NFT Collection
+    SetNftContractInfo {
+        description: Option<String>,
+        src: Option<String>,
+        banner_src: Option<String>,
+        twitter: Option<String>,
+        github: Option<String>,
+        discord: Option<String>,
+        telegram: Option<String>,
+        listing: Vec<NFTListing>,
+    },
+    /// Owner message: Set information about the NFT Traits
+    SetNftContractTraitInfo {
+        trait_map: Vec<(String, Vec<NFTTraitSummary>)>,
+    },
+    /// Owner message: Set keybase verification string
+    SetNftContractKeybaseVerification { message: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -135,9 +154,7 @@ pub enum QueryMsg {
     /// With MetaData Extension.
     /// Returns metadata about one particular token, based on *ERC721 Metadata JSON Schema*
     /// but directly from the contract: `NftInfoResponse`
-    NftInfo {
-        token_id: String,
-    },
+    NftInfo { token_id: String },
     /// With MetaData Extension.
     /// Returns the result of both `NftInfo` and `OwnerOf` as one query as an optimization
     /// for clients: `AllNftInfo`
@@ -170,16 +187,22 @@ pub enum QueryMsg {
         limit: Option<u32>,
     },
 
-    // Return the minter
+    /// Return the minter
     Minter {},
-    // Return the public key
+    /// Return the public key that is being used to validate messages with signatures
     PublicKey {},
-    // Return the mint amount
+    /// Return the mint amount
     MintAmount {},
-    // Return the total supply
+    /// Return the total supply
     TotalSupply {},
-    // Return the prefix for the images. defaults to ipfs://
+    /// Return the prefix for the images. defaults to ipfs://
     ImagePrefix {},
+    /// Returns top-level NFT metadata about the contract: `NFTContractInfoResponse`
+    NftContractInfo {},
+    /// Returns top-level NFT metadata about the trait maps:
+    NftContractTraitMap {},
+    /// Returns top-level NFT metadata about the keybase signature:
+    NftContractKeybaseVerification {},
 }
 
 /// Shows who can mint these tokens

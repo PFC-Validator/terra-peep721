@@ -1,6 +1,10 @@
 #![cfg(test)]
+
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-use cosmwasm_std::{from_binary, to_binary, Coin, CosmosMsg, DepsMut, Empty, Response, WasmMsg};
+use cosmwasm_std::{
+    from_binary, to_binary, Coin, CosmosMsg, Decimal, DepsMut, Empty, Response, WasmMsg,
+};
+use std::str::FromStr;
 
 use cw721::{
     ApprovedForAllResponse, ContractInfoResponse, Cw721Query, Cw721ReceiveMsg, Expiration,
@@ -9,6 +13,7 @@ use cw721::{
 
 use crate::extension::{MetaDataPersonalization, Metadata, Trait};
 use crate::msg::BuyMsg;
+use crate::state::{NFTListing, NFTTraitSummary};
 use crate::{
     BuyExtension, ContractError, Cw721Contract, ExecuteMsg, Extension, InstantiateMsg, MintMsg,
     QueryMsg,
@@ -1296,6 +1301,7 @@ fn set_public_key() {
         _ => {}
     }
 }
+
 #[test]
 fn set_status() {
     let mut deps = mock_dependencies(&[]);
@@ -1426,6 +1432,165 @@ fn set_status() {
             } else {
                 assert!(false, "Token ID not found")
             }
+        }
+    }
+}
+
+#[test]
+fn set_nft_contract_info() {
+    let mut deps = mock_dependencies(&[]);
+    let contract = setup_contract(deps.as_mut());
+
+    let nft_info_msg = ExecuteMsg::SetNftContractInfo {
+        description: None,
+        src: None,
+        banner_src: Some(String::from("URL to banner")),
+        twitter: Some("@twitter".to_string()),
+        github: None,
+        discord: None,
+        telegram: None,
+        listing: vec![
+            NFTListing {
+                label: "XYZ".to_string(),
+                listing_uri: "SomeURL".to_string(),
+            },
+            NFTListing {
+                label: "ABC".to_string(),
+                listing_uri: "Some Other URL".to_string(),
+            },
+        ],
+    };
+    let random = mock_info("random", &[]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, nft_info_msg.clone());
+
+    match contract_exec {
+        Err(ContractError::Unauthorized {}) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        Ok(_) => {
+            assert!(false, "Should not have worked");
+        }
+    }
+    let random = mock_info(MINTER, &[]);
+    let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, nft_info_msg.clone());
+    match contract_exec {
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        Ok(_) => {
+            let res = contract.nft_contract_info(&deps.storage).unwrap();
+            assert_eq!(res.description, None);
+            assert_eq!(res.listing.len(), 2);
+            assert_eq!(res.listing[0].label, "XYZ");
+            assert_eq!(res.listing[0].listing_uri, "SomeURL");
+            assert_eq!(res.twitter, Some("@twitter".to_string()));
+        }
+    }
+}
+
+#[test]
+fn set_nft_contract_keybase_verification() {
+    let mut deps = mock_dependencies(&[]);
+    let contract = setup_contract(deps.as_mut());
+
+    let nft_keybase_msg = ExecuteMsg::SetNftContractKeybaseVerification {
+        message: "This can really be anything. We don't verify it. but the aim is for the NFT owner to use keybase to sign it so others can verify the owner".to_string(),
+    };
+    let random = mock_info("random", &[]);
+    let contract_exec =
+        contract.execute(deps.as_mut(), mock_env(), random, nft_keybase_msg.clone());
+
+    match contract_exec {
+        Err(ContractError::Unauthorized {}) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        Ok(_) => {
+            assert!(false, "Should not have worked");
+        }
+    }
+    let random = mock_info(MINTER, &[]);
+    let contract_exec =
+        contract.execute(deps.as_mut(), mock_env(), random, nft_keybase_msg.clone());
+    match contract_exec {
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        Ok(_) => {
+            let res = contract
+                .nft_contract_keybase_verification(&deps.storage)
+                .unwrap();
+            assert_eq!(res.is_some(), true);
+        }
+    }
+}
+
+#[test]
+fn set_nft_trait_map() {
+    let mut deps = mock_dependencies(&[]);
+    let contract = setup_contract(deps.as_mut());
+
+    let nft_trait_map_msg = ExecuteMsg::SetNftContractTraitInfo {
+        trait_map: vec![
+            (
+                "Attribute1".to_string(),
+                vec![
+                    NFTTraitSummary {
+                        label: "A".to_string(),
+                        value: Decimal::from_str("0.90").unwrap(),
+                    },
+                    NFTTraitSummary {
+                        label: "B".to_string(),
+                        value: Decimal::from_str("0.10").unwrap(),
+                    },
+                ],
+            ),
+            (
+                "Attribute2".to_string(),
+                vec![
+                    NFTTraitSummary {
+                        label: "m".to_string(),
+                        value: Decimal::from_str("0.40").unwrap(),
+                    },
+                    NFTTraitSummary {
+                        label: "n".to_string(),
+                        value: Decimal::from_str("0.10").unwrap(),
+                    },
+                    NFTTraitSummary {
+                        label: "0".to_string(),
+                        value: Decimal::from_str("0.10").unwrap(),
+                    },
+                ],
+            ),
+        ],
+    };
+    let json_to_match = r#"[["Attribute1",[{"label":"A","value":"0.9"},{"label":"B","value":"0.1"}]],["Attribute2",[{"label":"m","value":"0.4"},{"label":"n","value":"0.1"},{"label":"0","value":"0.1"}]]]"#;
+
+    let random = mock_info("random", &[]);
+    let contract_exec =
+        contract.execute(deps.as_mut(), mock_env(), random, nft_trait_map_msg.clone());
+
+    match contract_exec {
+        Err(ContractError::Unauthorized {}) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        Ok(_) => {
+            assert!(false, "Should not have worked");
+        }
+    }
+    let random = mock_info(MINTER, &[]);
+    let contract_exec =
+        contract.execute(deps.as_mut(), mock_env(), random, nft_trait_map_msg.clone());
+    match contract_exec {
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+        Ok(_) => {
+            let res = contract.nft_contract_trait_map(&deps.storage).unwrap();
+            let json = serde_json_wasm::to_string(&res).unwrap();
+            assert_eq!(json, json_to_match);
         }
     }
 }

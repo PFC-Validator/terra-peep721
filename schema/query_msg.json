@@ -241,6 +241,7 @@
       "additionalProperties": false
     },
     {
+      "description": "Return the minter",
       "type": "object",
       "required": [
         "minter"
@@ -253,6 +254,7 @@
       "additionalProperties": false
     },
     {
+      "description": "Return the public key that is being used to validate messages with signatures",
       "type": "object",
       "required": [
         "public_key"
@@ -265,6 +267,7 @@
       "additionalProperties": false
     },
     {
+      "description": "Return the mint amount",
       "type": "object",
       "required": [
         "mint_amount"
@@ -277,6 +280,7 @@
       "additionalProperties": false
     },
     {
+      "description": "Return the total supply",
       "type": "object",
       "required": [
         "total_supply"
@@ -289,12 +293,52 @@
       "additionalProperties": false
     },
     {
+      "description": "Return the prefix for the images. defaults to ipfs://",
       "type": "object",
       "required": [
         "image_prefix"
       ],
       "properties": {
         "image_prefix": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Returns top-level NFT metadata about the contract: `NFTContractInfoResponse`",
+      "type": "object",
+      "required": [
+        "nft_contract_info"
+      ],
+      "properties": {
+        "nft_contract_info": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Returns top-level NFT metadata about the trait maps:",
+      "type": "object",
+      "required": [
+        "nft_contract_trait_map"
+      ],
+      "properties": {
+        "nft_contract_trait_map": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Returns top-level NFT metadata about the keybase signature:",
+      "type": "object",
+      "required": [
+        "nft_contract_keybase_verification"
+      ],
+      "properties": {
+        "nft_contract_keybase_verification": {
           "type": "object"
         }
       },

@@ -284,6 +284,130 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "description": "Owner message: Set information about the NFT Collection",
+      "type": "object",
+      "required": [
+        "set_nft_contract_info"
+      ],
+      "properties": {
+        "set_nft_contract_info": {
+          "type": "object",
+          "required": [
+            "listing"
+          ],
+          "properties": {
+            "banner_src": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "discord": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "github": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "listing": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/NFTListing"
+              }
+            },
+            "src": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "telegram": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "twitter": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Owner message: Set information about the NFT Traits",
+      "type": "object",
+      "required": [
+        "set_nft_contract_trait_info"
+      ],
+      "properties": {
+        "set_nft_contract_trait_info": {
+          "type": "object",
+          "required": [
+            "trait_map"
+          ],
+          "properties": {
+            "trait_map": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/NFTTraitSummary"
+                    }
+                  }
+                ],
+                "maxItems": 2,
+                "minItems": 2
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Owner message: Set keybase verification string",
+      "type": "object",
+      "required": [
+        "set_nft_contract_keybase_verification"
+      ],
+      "properties": {
+        "set_nft_contract_keybase_verification": {
+          "type": "object",
+          "required": [
+            "message"
+          ],
+          "properties": {
+            "message": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     }
   ],
   "definitions": {
@@ -331,6 +455,10 @@
           "type": "string"
         }
       }
+    },
+    "Decimal": {
+      "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
+      "type": "string"
     },
     "Expiration": {
       "description": "Expiration represents a point in time when some event happens. It can compare with a BlockInfo and will return is_expired() == true once the condition is hit (and for every block in the future)",
@@ -482,6 +610,36 @@
             "string",
             "null"
           ]
+        }
+      }
+    },
+    "NFTListing": {
+      "type": "object",
+      "required": [
+        "label",
+        "listing_uri"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "listing_uri": {
+          "type": "string"
+        }
+      }
+    },
+    "NFTTraitSummary": {
+      "type": "object",
+      "required": [
+        "label",
+        "value"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/definitions/Decimal"
         }
       }
     },

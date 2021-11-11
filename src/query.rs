@@ -225,6 +225,13 @@ where
             QueryMsg::MintAmount {} => to_binary(&self.mint_amount(deps.storage)?),
             QueryMsg::TotalSupply {} => to_binary(&self.max_issuance(deps.storage)?),
             QueryMsg::ImagePrefix {} => to_binary(&self.image_prefix(deps.storage)?),
+            QueryMsg::NftContractInfo {} => to_binary(&self.nft_contract_info(deps.storage)?),
+            QueryMsg::NftContractTraitMap {} => {
+                to_binary(&self.nft_contract_trait_map(deps.storage)?)
+            }
+            QueryMsg::NftContractKeybaseVerification {} => {
+                to_binary(&self.nft_contract_keybase_verification(deps.storage)?)
+            }
         }
     }
     fn page_tokens(
