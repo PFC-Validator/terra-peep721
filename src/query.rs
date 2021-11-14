@@ -219,6 +219,9 @@ where
             QueryMsg::AllTokens { start_after, limit } => {
                 to_binary(&self.all_tokens(deps, start_after, limit)?)
             }
+            QueryMsg::AllImgTokens { start_after, limit } => {
+                to_binary(&self.all_img_tokens(deps, start_after, limit)?)
+            }
             QueryMsg::RangeTokens { start_after, limit } => {
                 to_binary(&self.page_tokens(deps, start_after, limit)?)
             }
@@ -235,6 +238,25 @@ where
                 to_binary(&self.nft_contract_keybase_verification(deps.storage)?)
             }
         }
+    }
+    fn all_img_tokens(
+        &self,
+        deps: Deps,
+        start_after: Option<String>,
+        limit: Option<u32>,
+    ) -> StdResult<TokensResponse> {
+        let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
+        let start = start_after.map(Bound::exclusive);
+
+        let tokens: StdResult<Vec<String>> = self
+            .image_uri
+            .range(deps.storage, start, None, Order::Ascending)
+            .take(limit)
+            .map(|item| {
+                item.map(|(k, x)| format!("{}/{}", String::from_utf8_lossy(&k).to_string(), x))
+            })
+            .collect();
+        Ok(TokensResponse { tokens: tokens? })
     }
     fn page_tokens(
         &self,

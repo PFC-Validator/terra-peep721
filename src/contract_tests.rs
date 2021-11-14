@@ -1970,6 +1970,7 @@ fn change_name() {
             assert!(false, "Unexpected Error {:?}", err)
         }
     }
+    /*
     let migrate_msg = ExecuteMsg::Migrate20211113;
     let minter = mock_info(MINTER, &[]);
     let contract_exec = contract.execute(deps.as_mut(), mock_env(), minter, migrate_msg.clone());
@@ -1981,6 +1982,7 @@ fn change_name() {
             assert!(false, "Unexpected Error {:?}", err)
         }
     }
+    */
 
     match contract.nft_info(deps.as_ref(), "James Q Kirk".to_string()) {
         Ok(c) => {

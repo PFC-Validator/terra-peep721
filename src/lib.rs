@@ -12,16 +12,18 @@ pub use crate::error::ContractError;
 pub use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, MintMsg, MinterResponse, QueryMsg};
 
 use crate::state::{image_uri_idx_string, Cw721Contract, TokenIndexString};
+use cosmwasm_std::Order;
 use cw_storage_plus::{IndexedMap, MultiIndex};
-
 // This is a simple type to let us handle empty extensions
 pub type Extension = extension::Metadata;
 pub type BuyExtension = extension::BuyMetaData;
 
+use crate::state::TokenInfo;
 #[cfg(not(feature = "library"))]
 pub mod entry {
     use super::*;
 
+    use crate::extension::MetaDataPersonalization;
     use cosmwasm_std::entry_point;
     use cosmwasm_std::{Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult};
 
@@ -54,7 +56,7 @@ pub mod entry {
         tract.query(deps, env, msg)
     }
     #[entry_point]
-    pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
         let mut tract = Cw721Contract::<Extension, Empty>::default();
 
         // set the new version
@@ -67,7 +69,35 @@ pub mod entry {
         };
         let image_uri = IndexedMap::new(image_uri_key, image_indexes);
         tract.image_uri = image_uri;
+        let t = tract
+            .tokens
+            .range(deps.storage, None, None, Order::Ascending)
+            .map(|f| match f {
+                Ok(token_pair) => Ok(token_pair.1),
+                Err(e) => Err(e),
+            })
+            .collect::<Vec<StdResult<TokenInfo<Extension>>>>();
+        let mut count = 0;
+        let mut errors = 0;
+        for token_result in t {
+            if let Ok(token) = token_result {
+                // let token_id = token.token_uri.unwrap_or_default();
+                let token_name = token.extension.get_name().unwrap_or_default();
+                let img = token.extension.get_image_raw();
+                if let Some(img_str) = img {
+                    let _x = tract.image_uri.save(deps.storage, &img_str, &token_name)?;
+                    count += 1;
+                } else {
+                    errors += 1;
+                }
+            } else {
+                errors += 1;
+            }
+        }
+        Ok(Response::new()
+            .add_attribute("count", format!("{}", count))
+            .add_attribute("errors", format!("{}", errors)))
 
-        Ok(Response::default())
+        //Ok(Response::default())
     }
 }

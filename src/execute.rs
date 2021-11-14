@@ -604,18 +604,12 @@ where
 
         for token_result in t {
             if let Ok(token) = token_result {
-                let token_id = token.token_uri.unwrap_or_default();
+                //let token_id = token.token_uri.unwrap_or_default();
+                let name = token.extension.get_name().unwrap_or_default();
                 let img = token.extension.get_image_raw();
                 if let Some(img_str) = img {
-                    let _x = self
-                        .image_uri
-                        .update(deps.storage, &img_str, |old| match old {
-                            Some(_x) => {
-                                skipped += 1;
-                                Err(ContractError::ImageClaimed {})
-                            }
-                            None => Ok(token_id),
-                        });
+                    let _x = self.image_uri.save(deps.storage, &img_str, &name)?;
+
                     count += 1;
                 } else {
                     errors += 1;
