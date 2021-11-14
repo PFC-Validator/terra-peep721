@@ -1,6 +1,6 @@
 [package]
 name = "terra-peep721"
-version = "0.4.2"
+version = "0.4.3"
 authors = ["PFC"]
 edition = "2018"
 

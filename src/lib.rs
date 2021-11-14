@@ -57,47 +57,49 @@ pub mod entry {
     }
     #[entry_point]
     pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
-        let mut tract = Cw721Contract::<Extension, Empty>::default();
+        if false {
+            let mut tract = Cw721Contract::<Extension, Empty>::default();
 
-        // set the new version
-        //   cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+            // set the new version
+            //   cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-        let image_uri_key = "image_uri";
-        let image_uri_owner_key = "image_uri__owner";
-        let image_indexes = TokenIndexString {
-            owner: MultiIndex::new(image_uri_idx_string, image_uri_key, image_uri_owner_key),
-        };
-        let image_uri = IndexedMap::new(image_uri_key, image_indexes);
-        tract.image_uri = image_uri;
-        let t = tract
-            .tokens
-            .range(deps.storage, None, None, Order::Ascending)
-            .map(|f| match f {
-                Ok(token_pair) => Ok(token_pair.1),
-                Err(e) => Err(e),
-            })
-            .collect::<Vec<StdResult<TokenInfo<Extension>>>>();
-        let mut count = 0;
-        let mut errors = 0;
-        for token_result in t {
-            if let Ok(token) = token_result {
-                // let token_id = token.token_uri.unwrap_or_default();
-                let token_name = token.extension.get_name().unwrap_or_default();
-                let img = token.extension.get_image_raw();
-                if let Some(img_str) = img {
-                    let _x = tract.image_uri.save(deps.storage, &img_str, &token_name)?;
-                    count += 1;
+            let image_uri_key = "image_uri";
+            let image_uri_owner_key = "image_uri__owner";
+            let image_indexes = TokenIndexString {
+                owner: MultiIndex::new(image_uri_idx_string, image_uri_key, image_uri_owner_key),
+            };
+            let image_uri = IndexedMap::new(image_uri_key, image_indexes);
+            tract.image_uri = image_uri;
+            let t = tract
+                .tokens
+                .range(deps.storage, None, None, Order::Ascending)
+                .map(|f| match f {
+                    Ok(token_pair) => Ok(token_pair.1),
+                    Err(e) => Err(e),
+                })
+                .collect::<Vec<StdResult<TokenInfo<Extension>>>>();
+            let mut count = 0;
+            let mut errors = 0;
+            for token_result in t {
+                if let Ok(token) = token_result {
+                    // let token_id = token.token_uri.unwrap_or_default();
+                    let token_name = token.extension.get_name().unwrap_or_default();
+                    let img = token.extension.get_image_raw();
+                    if let Some(img_str) = img {
+                        let _x = tract.image_uri.save(deps.storage, &img_str, &token_name)?;
+                        count += 1;
+                    } else {
+                        errors += 1;
+                    }
                 } else {
                     errors += 1;
                 }
-            } else {
-                errors += 1;
             }
+            Ok(Response::new()
+                .add_attribute("count", format!("{}", count))
+                .add_attribute("errors", format!("{}", errors)))
+        } else {
+            Ok(Response::default())
         }
-        Ok(Response::new()
-            .add_attribute("count", format!("{}", count))
-            .add_attribute("errors", format!("{}", errors)))
-
-        //Ok(Response::default())
     }
 }

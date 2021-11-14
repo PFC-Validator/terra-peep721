@@ -1,6 +1,5 @@
 use cosmwasm_std::{
-    BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult,
-    Uint128,
+    BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -162,7 +161,6 @@ where
                 self.set_nft_keybase_verification(deps, env, info, message)
             }
             ExecuteMsg::Sweep { denom } => self.sweep(deps, env, info, denom),
-            ExecuteMsg::Migrate20211113 => self.do_migrate_20211113(deps, env, info),
         }
     }
 }
@@ -205,7 +203,7 @@ where
         } else {
             return Err(ContractError::TokenMissing {});
         }
-        if let Some(image_uri) = msg.extension.get_image_raw().clone() {
+        if let Some(image_uri) = msg.extension.get_image_raw() {
             if let Ok(_x) = self.image_uri.load(deps.storage, &image_uri) {
                 return Err(ContractError::ImageClaimed {});
             }
@@ -225,7 +223,7 @@ where
                     None => Ok(token_uri.clone()),
                 })?;
         }
-        if let Some(image_uri) = msg.extension.get_image_raw().clone() {
+        if let Some(image_uri) = msg.extension.get_image_raw() {
             self.image_uri
                 .update(deps.storage, &image_uri, |old| match old {
                     Some(_) => Err(ContractError::ImageClaimed {}),
@@ -579,51 +577,6 @@ where
                 amount: vec![Coin { denom, amount }],
             })))
     }
-    pub fn do_migrate_20211113(
-        &self,
-        deps: DepsMut,
-        _env: Env,
-        info: MessageInfo,
-    ) -> Result<Response<C>, ContractError> {
-        let minter = self.minter.load(deps.storage)?;
-        let mut count = 0;
-        let mut errors = 0;
-        let mut skipped = 0;
-
-        if info.sender != minter {
-            return Err(ContractError::Unauthorized {});
-        }
-        let t = self
-            .tokens
-            .range(deps.storage, None, None, Order::Ascending)
-            .map(|f| match f {
-                Ok(token_pair) => Ok(token_pair.1),
-                Err(e) => Err(e),
-            })
-            .collect::<Vec<StdResult<TokenInfo<T>>>>();
-
-        for token_result in t {
-            if let Ok(token) = token_result {
-                //let token_id = token.token_uri.unwrap_or_default();
-                let name = token.extension.get_name().unwrap_or_default();
-                let img = token.extension.get_image_raw();
-                if let Some(img_str) = img {
-                    let _x = self.image_uri.save(deps.storage, &img_str, &name)?;
-
-                    count += 1;
-                } else {
-                    errors += 1;
-                }
-            } else {
-                errors += 1;
-            }
-        }
-
-        Ok(Response::new()
-            .add_attribute("migrate 2021-11-13 OK", format!("{}", count))
-            .add_attribute("migrate 2021-11-13 ERR", format!("{}", errors))
-            .add_attribute("migrate 2021-11-13 Skipped", format!("{}", skipped)))
-    }
 }
 
 impl<'a, T, C> Cw721Execute<T, C> for Cw721Contract<'a, T, C>
@@ -820,16 +773,16 @@ where
                 Ok(_) => return Err(ContractError::Claimed {}),
                 Err(_) => {
                     token.extension.set_name(Some(nam.clone()));
-                    self.tokens.save(deps.storage, &nam, &token.clone())?;
-                    self.tokens.remove(deps.storage, &token_id)?;
+                    self.tokens.save(deps.storage, nam, &token.clone())?;
+                    self.tokens.remove(deps.storage, token_id)?;
                     self.tokens_uri
-                        .save(deps.storage, &token.extension.get_token_uri(), &nam)?;
+                        .save(deps.storage, &token.extension.get_token_uri(), nam)?;
 
-                    self.tokens_uri
-                        .remove(deps.storage, &token.extension.get_token_uri())?;
+                    //  self.tokens_uri
+                    //     .remove(deps.storage, &token.extension.get_token_uri())?;
                     if let Some(img) = token.extension.get_image_raw() {
-                        self.image_uri.save(deps.storage, &img, &nam)?;
-                        self.image_uri.remove(deps.storage, &img)?;
+                        self.image_uri.save(deps.storage, &img, nam)?;
+                        //   self.image_uri.remove(deps.storage, &img)?;
                     }
                 }
             }
@@ -985,7 +938,7 @@ where
                 .add_attribute("token_id", name_in)
                 .add_attribute(
                     "description",
-                    description.unwrap_or("-not changed-".to_string()),
+                    description.unwrap_or_else(|| "-not changed-".to_string()),
                 ))
         } else {
             Ok(Response::new()
@@ -994,7 +947,7 @@ where
                 .add_attribute("token_id", token_id)
                 .add_attribute(
                     "description",
-                    description.unwrap_or("-not changed-".to_string()),
+                    description.unwrap_or_else(|| "-not changed-".to_string()),
                 ))
         }
     }
