@@ -120,6 +120,27 @@
       "additionalProperties": false
     },
     {
+      "description": "With MetaData Extension. Returns metadata about one particular token, based on *ERC721 Metadata JSON Schema* but directly from the contract: `NftInfoResponse`",
+      "type": "object",
+      "required": [
+        "image_info"
+      ],
+      "properties": {
+        "image_info": {
+          "type": "object",
+          "required": [
+            "img_uri"
+          ],
+          "properties": {
+            "img_uri": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "With MetaData Extension. Returns the result of both `NftInfo` and `OwnerOf` as one query as an optimization for clients: `AllNftInfo`",
       "type": "object",
       "required": [
@@ -274,6 +295,19 @@
       ],
       "properties": {
         "mint_amount": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Return the change amount and multiplier",
+      "type": "object",
+      "required": [
+        "change_details"
+      ],
+      "properties": {
+        "change_details": {
           "type": "object"
         }
       },

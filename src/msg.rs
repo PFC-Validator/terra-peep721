@@ -24,6 +24,10 @@ pub struct InstantiateMsg {
     pub public_key: String,
     /// minimum amount of uluna to buy via BUY message
     pub mint_amount: u64,
+    /// minimum amount of uusd to execute a change message
+    pub change_amount: u64,
+    /// price change multiplier
+    pub change_multiplier: u64,
     /// max amount of tokens to issue
     pub max_issuance: u64,
 }
@@ -38,7 +42,10 @@ where
     T: MetaDataPersonalization,
 {
     /// Transfer is a base message to move a token to another account without triggering actions
-    TransferNft { recipient: String, token_id: String },
+    TransferNft {
+        recipient: String,
+        token_id: String,
+    },
     /// Send is a base message to transfer a token to a contract and trigger an action
     /// on the receiving contract.
     SendNft {
@@ -54,7 +61,10 @@ where
         expires: Option<Expiration>,
     },
     /// Remove previously granted Approval
-    Revoke { spender: String, token_id: String },
+    Revoke {
+        spender: String,
+        token_id: String,
+    },
     /// Allows operator to transfer / send any token from the owner's account.
     /// If expiration is set, then this allowance has a time/height limit
     ApproveAll {
@@ -62,22 +72,53 @@ where
         expires: Option<Expiration>,
     },
     /// Remove previously granted ApproveAll permission
-    RevokeAll { operator: String },
+    RevokeAll {
+        operator: String,
+    },
 
     /// Mint a new NFT, can only be called by the contract minter
     Mint(MintMsg<T>),
+    /// Burn an NFT the sender has access to
+    Burn {
+        token_id: String,
+    },
     /// Allow a buyer to mint a NFT directly
     Buy(BuyMsg),
     /// Owner function: Sends coins in the contract to admin
-    Sweep { denom: String },
+    Sweep {
+        denom: String,
+    },
     /// Owner function: change public key
-    SetPublicKey { public_key: String },
-    /// Owner function: change mint price
-    SetMintAmount { mint_amount: u64 },
+    SetPublicKey {
+        public_key: String,
+    },
+    /// Owner function: change mint price (uluna)
+    SetMintAmount {
+        mint_amount: u64,
+    },
+    /// Owner function: change change #times multipler)
+    SetChangeTimesMultiplier {
+        change_multiplier: u64,
+    },
+    /// Owner function: change change name price (uusd)
+    SetChangeAmount {
+        change_amount: u64,
+    },
     /// User message: allow owner to change status field of NFT
-    SetTokenStatus { status: String, token_id: String },
+    SetTokenStatus {
+        status: String,
+        token_id: String,
+    },
+    /// User message: allow owner to change name & description field of NFT
+    SetTokenNameDescription {
+        description: Option<String>,
+        name: Option<String>,
+        token_id: String,
+    },
     /// Owner message: change prefix for images. defaults to ipfs://
-    SetImagePrefix { prefix: String },
+    SetImagePrefix {
+        prefix: String,
+    },
     /// Owner message: Set information about the NFT Collection
     SetNftContractInfo {
         description: Option<String>,
@@ -94,7 +135,10 @@ where
         trait_map: Vec<(String, Vec<NftTraitSummary>)>,
     },
     /// Owner message: Set keybase verification string
-    SetNftContractKeybaseVerification { message: String },
+    SetNftContractKeybaseVerification {
+        message: String,
+    },
+    Migrate20211113,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -158,6 +202,10 @@ pub enum QueryMsg {
     /// but directly from the contract: `NftInfoResponse`
     NftInfo { token_id: String },
     /// With MetaData Extension.
+    /// Returns metadata about one particular token, based on *ERC721 Metadata JSON Schema*
+    /// but directly from the contract: `NftInfoResponse`
+    ImageInfo { img_uri: String },
+    /// With MetaData Extension.
     /// Returns the result of both `NftInfo` and `OwnerOf` as one query as an optimization
     /// for clients: `AllNftInfo`
     AllNftInfo {
@@ -195,6 +243,8 @@ pub enum QueryMsg {
     PublicKey {},
     /// Return the mint amount
     MintAmount {},
+    /// Return the change amount and multiplier
+    ChangeDetails {},
     /// Return the total supply
     TotalSupply {},
     /// Return the prefix for the images. defaults to ipfs://

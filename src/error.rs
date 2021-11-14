@@ -18,6 +18,12 @@ pub enum ContractError {
 
     #[error("token_id already claimed")]
     Claimed {},
+    #[error("token_id is missing")]
+    TokenMissing {},
+    #[error("image already claimed")]
+    ImageClaimed {},
+    #[error("image missing")]
+    ImageMissing {},
     #[error("Maximum amount of tokens already issued")]
     MaxIssued {},
 

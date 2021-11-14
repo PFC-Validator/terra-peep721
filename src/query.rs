@@ -181,6 +181,7 @@ where
             QueryMsg::Minter {} => to_binary(&self.minter(deps)?),
             QueryMsg::ContractInfo {} => to_binary(&self.contract_info(deps)?),
             QueryMsg::NftInfo { token_id } => to_binary(&self.nft_info(deps, token_id)?),
+            QueryMsg::ImageInfo { img_uri } => to_binary(&self.image_info(deps, img_uri)?),
             QueryMsg::OwnerOf {
                 token_id,
                 include_expired,
@@ -223,6 +224,7 @@ where
             }
             QueryMsg::PublicKey {} => to_binary(&self.public_key(deps.storage)?),
             QueryMsg::MintAmount {} => to_binary(&self.mint_amount(deps.storage)?),
+            QueryMsg::ChangeDetails {} => to_binary(&self.change_details(deps.storage)?),
             QueryMsg::TotalSupply {} => to_binary(&self.max_issuance(deps.storage)?),
             QueryMsg::ImagePrefix {} => to_binary(&self.image_prefix(deps.storage)?),
             QueryMsg::NftContractInfo {} => to_binary(&self.nft_contract_info(deps.storage)?),
@@ -249,6 +251,30 @@ where
             .map(|item| item.map(|(k, _)| String::from_utf8_lossy(&k).to_string()))
             .collect();
         Ok(TokensResponse { tokens: tokens? })
+    }
+
+    pub(crate) fn image_info(
+        &self,
+        deps: Deps,
+        image_uri: String,
+    ) -> StdResult<NftInfoResponse<T>> {
+        let prefix = self.image_prefix(deps.storage)?;
+        let token_id = self.image_uri.load(deps.storage, &image_uri)?;
+        let info = self.tokens.load(deps.storage, &token_id)?;
+        if let Some(image) = info.extension.get_image(&prefix) {
+            let mut extension = info.extension.clone();
+            extension.set_image(Some(image));
+
+            Ok(NftInfoResponse {
+                token_uri: info.token_uri,
+                extension,
+            })
+        } else {
+            Ok(NftInfoResponse {
+                token_uri: info.token_uri,
+                extension: info.extension,
+            })
+        }
     }
 }
 

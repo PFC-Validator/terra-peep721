@@ -15,7 +15,12 @@ pub trait MetaDataPersonalization {
     fn get_status(&self) -> Option<String>;
     fn get_token_uri(&self) -> String;
     fn get_image(&self, prefix: &str) -> Option<String>;
+    fn get_image_raw(&self) -> Option<String>;
     fn set_image(&mut self, image: Option<String>);
+    fn get_name(&self) -> Option<String>;
+    fn set_name(&mut self, image: Option<String>);
+    fn get_description(&self) -> Option<String>;
+    fn set_description(&mut self, image: Option<String>);
 }
 
 pub trait MetaPersonalize {
@@ -90,6 +95,22 @@ impl MetaDataPersonalization for Metadata {
     }
     fn set_image(&mut self, image: Option<String>) {
         self.image = image
+    }
+    fn get_image_raw(&self) -> Option<String> {
+        self.image.clone()
+    }
+    fn get_name(&self) -> Option<String> {
+        self.name.clone()
+    }
+    fn set_name(&mut self, name: Option<String>) {
+        self.set_personalized_trait("name", name.as_ref().unwrap_or(&"".to_string()));
+        // self.name = name
+    }
+    fn get_description(&self) -> Option<String> {
+        self.description.clone()
+    }
+    fn set_description(&mut self, description: Option<String>) {
+        self.description = description
     }
 }
 

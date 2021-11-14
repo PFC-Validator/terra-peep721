@@ -10,7 +10,9 @@ pub mod state;
 
 pub use crate::error::ContractError;
 pub use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, MintMsg, MinterResponse, QueryMsg};
-pub use crate::state::Cw721Contract;
+
+use crate::state::{image_uri_idx_string, Cw721Contract, TokenIndexString};
+use cw_storage_plus::{IndexedMap, MultiIndex};
 
 // This is a simple type to let us handle empty extensions
 pub type Extension = extension::Metadata;
@@ -53,6 +55,19 @@ pub mod entry {
     }
     #[entry_point]
     pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+        let mut tract = Cw721Contract::<Extension, Empty>::default();
+
+        // set the new version
+        //   cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+        let image_uri_key = "image_uri";
+        let image_uri_owner_key = "image_uri__owner";
+        let image_indexes = TokenIndexString {
+            owner: MultiIndex::new(image_uri_idx_string, image_uri_key, image_uri_owner_key),
+        };
+        let image_uri = IndexedMap::new(image_uri_key, image_indexes);
+        tract.image_uri = image_uri;
+
         Ok(Response::default())
     }
 }
