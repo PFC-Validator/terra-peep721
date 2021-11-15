@@ -840,27 +840,36 @@ where
             token.extension.set_description(Some(desc.clone()));
         }
         if let Some(nam) = name {
-            match self.tokens.load(deps.storage, nam) {
-                Ok(_) => return Err(ContractError::Claimed {}),
-                Err(_) => {
-                    token.extension.set_name(Some(nam.clone()));
-                    self.tokens.save(deps.storage, nam, &token)?;
-                    self.tokens.remove(deps.storage, token_id)?;
-                    self.tokens_uri
-                        .save(deps.storage, &token.extension.get_token_uri(), nam)?;
+            if nam.is_empty() || nam.len() < 1 {
+                self.tokens.save(deps.storage, token_id, &token)?;
+                self.change_dynamics
+                    .save(deps.storage, token_id, &change_dynamics)?;
+            } else {
+                match self.tokens.load(deps.storage, nam) {
+                    Ok(_) => return Err(ContractError::Claimed {}),
+                    Err(_) => {
+                        token.extension.set_name(Some(nam.clone()));
+                        self.tokens.save(deps.storage, nam, &token)?;
+                        self.tokens.remove(deps.storage, token_id)?;
+                        self.tokens_uri.save(
+                            deps.storage,
+                            &token.extension.get_token_uri(),
+                            nam,
+                        )?;
 
-                    //  self.tokens_uri
-                    //     .remove(deps.storage, &token.extension.get_token_uri())?;
-                    if let Some(img) = token.extension.get_image_raw() {
-                        self.image_uri.save(deps.storage, &img, nam)?;
-                        //   self.image_uri.remove(deps.storage, &img)?;
+                        //  self.tokens_uri
+                        //     .remove(deps.storage, &token.extension.get_token_uri())?;
+                        if let Some(img) = token.extension.get_image_raw() {
+                            self.image_uri.save(deps.storage, &img, nam)?;
+                            //   self.image_uri.remove(deps.storage, &img)?;
+                        }
+                        if old_exists {
+                            self.change_dynamics.remove(deps.storage, token_id)?;
+                        }
+                        change_dynamics.token_id = nam.to_string();
+                        self.change_dynamics
+                            .save(deps.storage, nam, &change_dynamics)?;
                     }
-                    if old_exists {
-                        self.change_dynamics.remove(deps.storage, token_id)?;
-                    }
-                    change_dynamics.token_id = nam.to_string();
-                    self.change_dynamics
-                        .save(deps.storage, nam, &change_dynamics)?;
                 }
             }
         } else {
@@ -1010,15 +1019,26 @@ where
         self._set_name_description(deps, &env, &info, &token_id, &name, &description)?;
 
         if let Some(name_in) = name {
-            Ok(Response::new()
-                .add_attribute("action", "change_name")
-                .add_attribute("sender", info.sender)
-                .add_attribute("old_token_id", token_id)
-                .add_attribute("token_id", name_in)
-                .add_attribute(
-                    "description",
-                    description.unwrap_or_else(|| "-not changed-".to_string()),
-                ))
+            if name_in.is_empty() || name_in.len() < 1 {
+                Ok(Response::new()
+                    .add_attribute("action", "change_name")
+                    .add_attribute("sender", info.sender)
+                    .add_attribute("token_id", token_id)
+                    .add_attribute(
+                        "description",
+                        description.unwrap_or_else(|| "-not changed-".to_string()),
+                    ))
+            } else {
+                Ok(Response::new()
+                    .add_attribute("action", "change_name")
+                    .add_attribute("sender", info.sender)
+                    .add_attribute("old_token_id", token_id)
+                    .add_attribute("token_id", name_in)
+                    .add_attribute(
+                        "description",
+                        description.unwrap_or_else(|| "-not changed-".to_string()),
+                    ))
+            }
         } else {
             Ok(Response::new()
                 .add_attribute("action", "change_description")
