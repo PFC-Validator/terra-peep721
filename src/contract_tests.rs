@@ -34,7 +34,7 @@ fn setup_contract(deps: DepsMut<'_>) -> Cw721Contract<'static, Extension, Empty>
         public_key: String::from(PUBLIC_KEY),
         mint_amount: 3_000_000u64,
         change_amount: 1_000_000u64,
-        change_multiplier: 10,
+        change_multiplier: 2u64,
         max_issuance: 3u64,
     };
     let info = mock_info("creator", &[]);
@@ -315,8 +315,20 @@ fn transferring_nft() {
     };
 
     let res = contract
-        .execute(deps.as_mut(), mock_env(), random, transfer_msg)
+        .execute(deps.as_mut(), mock_env(), random.clone(), transfer_msg)
         .unwrap();
+
+    match contract.change_dynamics.load(&deps.storage, &token_id) {
+        Ok(dynamics) => {
+            assert_eq!(dynamics.owner, "random".to_string());
+            assert!(dynamics.unique_owners.contains(&random.sender));
+            assert_eq!(dynamics.unique_owners.len(), 2);
+            assert_eq!(dynamics.transfer_count, 1);
+        }
+        Err(e) => {
+            assert!(false, "Unexpected Error {:?}", e)
+        }
+    }
 
     assert_eq!(
         res,
@@ -1892,7 +1904,7 @@ fn change_name() {
         attributes: json_string.clone(),
         buy_metadata: buy_msg.clone(),
     });
-    //good signature
+
     let random = mock_info("random", &[Coin::new(3_000_000u128, "uluna")]);
     let contract_exec = contract.execute(deps.as_mut(), mock_env(), random, mint_msg.clone());
 
@@ -1902,7 +1914,6 @@ fn change_name() {
         }
         _ => {}
     }
-    //    let tokens = contract.all_tokens(deps.as_ref(), None, None).unwrap();
 
     let tokens = contract.all_tokens(deps.as_ref(), None, None).unwrap();
 
@@ -1958,10 +1969,45 @@ fn change_name() {
 
     let change_name_msg = ExecuteMsg::SetTokenNameDescription {
         description: Some("This is a strange description".to_string()),
+        name: None,
+        token_id: "James Dean".to_string(),
+    };
+    let random = mock_info("random", &[]);
+    let contract_exec =
+        contract.execute(deps.as_mut(), mock_env(), random, change_name_msg.clone());
+    match contract_exec {
+        Ok(_) => {
+            match contract.nft_info(deps.as_ref(), "James Dean".to_string()) {
+                Ok(nft_info) => {
+                    assert_eq!(
+                        nft_info.extension.name.unwrap_or_default(),
+                        "James Dean".to_string()
+                    );
+                    assert_eq!(
+                        nft_info.extension.description.unwrap_or_default(),
+                        "This is a strange description".to_string()
+                    );
+                }
+                Err(err) => {
+                    assert!(false, "Unexpected Error {:?}", err)
+                }
+            }
+            match contract.change_dynamics.load(&deps.storage, "James Dean") {
+                Ok(t) => assert_eq!(t.change_count, 1),
+                Err(e) => assert!(false, "Unexpected Error {:?}", e),
+            }
+        }
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+    }
+
+    let change_name_msg = ExecuteMsg::SetTokenNameDescription {
+        description: Some("This is a strange description as well".to_string()),
         name: Some("James Q Kirk".to_string()),
         token_id: "James Dean".to_string(),
     };
-    let random = mock_info("random", &[Coin::new(1_000_000u128, "uusd")]);
+    let random = mock_info("random", &[]);
     let contract_exec =
         contract.execute(deps.as_mut(), mock_env(), random, change_name_msg.clone());
     match contract_exec {
@@ -1970,30 +2016,45 @@ fn change_name() {
             assert!(false, "Unexpected Error {:?}", err)
         }
     }
-    /*
-    let migrate_msg = ExecuteMsg::Migrate20211113;
-    let minter = mock_info(MINTER, &[]);
-    let contract_exec = contract.execute(deps.as_mut(), mock_env(), minter, migrate_msg.clone());
-    match contract_exec {
-        Ok(_resp) => {
-            println!("{:?}", _resp)
-        }
-        Err(err) => {
-            assert!(false, "Unexpected Error {:?}", err)
-        }
-    }
-    */
 
     match contract.nft_info(deps.as_ref(), "James Q Kirk".to_string()) {
         Ok(c) => {
             assert_eq!(c.extension.get_name().unwrap_or_default(), "James Q Kirk");
             assert_eq!(
                 c.extension.description.unwrap_or_default(),
-                "This is a strange description"
+                "This is a strange description as well"
             );
         }
         Err(e) => {
             assert!(false, "Unexpected Error {:?}", e)
+        }
+    }
+    match contract.change_dynamics.load(&deps.storage, "James Q Kirk") {
+        Ok(t) => assert_eq!(t.change_count, 2),
+        Err(e) => assert!(false, "Unexpected Error {:?}", e),
+    }
+
+    let change_name_msg = ExecuteMsg::SetTokenNameDescription {
+        description: Some("This is a strange description as well".to_string()),
+        name: Some("James Q Kirk".to_string()),
+        token_id: "James Dean".to_string(),
+    };
+    let random = mock_info("random", &[]);
+
+    let contract_exec =
+        contract.execute(deps.as_mut(), mock_env(), random, change_name_msg.clone());
+    match contract_exec {
+        Ok(_resp) => {
+            assert!(false, "should not be able to be found")
+        }
+        Err(ContractError::Std(x)) => match x {
+            StdError::NotFound { .. } => {}
+            _ => {
+                assert!(false, "Unexpected Error {:?}", x)
+            }
+        },
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
         }
     }
 
@@ -2002,6 +2063,118 @@ fn change_name() {
             assert!(false, "Should have failed")
         }
         Err(StdError::NotFound { .. }) => {}
+        Err(e) => {
+            assert!(false, "Unexpected Error {:?}", e)
+        }
+    }
+    // should be able to rename to now unused name
+    let change_name_msg = ExecuteMsg::SetTokenNameDescription {
+        description: None,
+        name: Some("James Dean".to_string()),
+        token_id: "Agatha Tokra".to_string(),
+    };
+    let random = mock_info("random", &[]);
+    let contract_exec =
+        contract.execute(deps.as_mut(), mock_env(), random, change_name_msg.clone());
+    match contract_exec {
+        Ok(_resp) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+    }
+    let change_name_msg = ExecuteMsg::SetTokenNameDescription {
+        description: Some("The Crystal Method".to_string()),
+        name: None,
+        token_id: "James Q Kirk".to_string(),
+    };
+    let random = mock_info("random", &[]);
+
+    let contract_exec =
+        contract.execute(deps.as_mut(), mock_env(), random, change_name_msg.clone());
+    match contract_exec {
+        Ok(_resp) => {
+            assert!(false, "should have asked for $$")
+        }
+        Err(ContractError::Funds {}) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+    }
+    let change_name_msg = ExecuteMsg::SetTokenNameDescription {
+        description: Some("Welcome to the Jungle".to_string()),
+        name: None,
+        token_id: "James Q Kirk".to_string(),
+    };
+    let random = mock_info("random", &[Coin::new(1_000_000, "uusd")]);
+
+    let contract_exec =
+        contract.execute(deps.as_mut(), mock_env(), random, change_name_msg.clone());
+    match contract_exec {
+        Ok(_resp) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+    }
+    let change_name_msg = ExecuteMsg::SetTokenNameDescription {
+        description: Some("Run with the Wolves".to_string()),
+        name: None,
+        token_id: "James Q Kirk".to_string(),
+    };
+    let random = mock_info("random", &[Coin::new(1_000_000, "uusd")]);
+
+    let contract_exec =
+        contract.execute(deps.as_mut(), mock_env(), random, change_name_msg.clone());
+    match contract_exec {
+        Ok(_resp) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+    }
+    // this one should fail, as it now costs $2
+    let change_name_msg = ExecuteMsg::SetTokenNameDescription {
+        description: Some("Highway to Hell".to_string()),
+        name: None,
+        token_id: "James Q Kirk".to_string(),
+    };
+
+    let random = mock_info("random", &[Coin::new(1_000_000, "uusd")]);
+
+    let contract_exec =
+        contract.execute(deps.as_mut(), mock_env(), random, change_name_msg.clone());
+    match contract_exec {
+        Ok(_resp) => {
+            assert!(false, "should have asked for more $$")
+        }
+        Err(ContractError::Funds {}) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+    }
+    // ensure the calc works
+    let change_name_msg = ExecuteMsg::SetTokenNameDescription {
+        description: Some("Another one bites the dust".to_string()),
+        name: None,
+        token_id: "James Q Kirk".to_string(),
+    };
+
+    let random = mock_info("random", &[Coin::new(2_000_000, "uusd")]);
+
+    let contract_exec =
+        contract.execute(deps.as_mut(), mock_env(), random, change_name_msg.clone());
+    match contract_exec {
+        Ok(_resp) => {}
+        Err(err) => {
+            assert!(false, "Unexpected Error {:?}", err)
+        }
+    }
+
+    match contract.nft_info(deps.as_ref(), "James Q Kirk".to_string()) {
+        Ok(x) => {
+            assert_eq!(
+                x.extension.description.unwrap_or_default(),
+                "Another one bites the dust"
+            )
+        }
         Err(e) => {
             assert!(false, "Unexpected Error {:?}", e)
         }

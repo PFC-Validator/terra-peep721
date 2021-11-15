@@ -11,19 +11,21 @@ pub mod state;
 pub use crate::error::ContractError;
 pub use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, MintMsg, MinterResponse, QueryMsg};
 
-use crate::state::{image_uri_idx_string, Cw721Contract, TokenIndexString};
-use cosmwasm_std::Order;
+use crate::state::Cw721Contract;
+//use cosmwasm_std::Order;
 use cw_storage_plus::{IndexedMap, MultiIndex};
 // This is a simple type to let us handle empty extensions
 pub type Extension = extension::Metadata;
 pub type BuyExtension = extension::BuyMetaData;
 
-use crate::state::TokenInfo;
+//use crate::state::TokenInfo;
 #[cfg(not(feature = "library"))]
 pub mod entry {
     use super::*;
 
-    use crate::extension::MetaDataPersonalization;
+    //use crate::extension::MetaDataPersonalization;
+
+    use crate::state::{token_owner_idx_change_dynamics, ChangeDynamicsIndexes};
     use cosmwasm_std::entry_point;
     use cosmwasm_std::{Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult};
 
@@ -56,8 +58,25 @@ pub mod entry {
         tract.query(deps, env, msg)
     }
     #[entry_point]
-    pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
-        if false {
+    pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+        let mut tract = Cw721Contract::<Extension, Empty>::default();
+        let change_dynamics_key = "change_dynamics";
+        let change_dynamics_owner_key = "change_dynamics__owner";
+        let change_dynamics_indexes = ChangeDynamicsIndexes {
+            owner: MultiIndex::new(
+                token_owner_idx_change_dynamics,
+                change_dynamics_key,
+                change_dynamics_owner_key,
+            ),
+        };
+        tract.change_dynamics = IndexedMap::new(change_dynamics_key, change_dynamics_indexes);
+
+        Ok(Response::default())
+    }
+}
+
+/*
+if false {
             let mut tract = Cw721Contract::<Extension, Empty>::default();
 
             // set the new version
@@ -101,5 +120,4 @@ pub mod entry {
         } else {
             Ok(Response::default())
         }
-    }
-}
+ */

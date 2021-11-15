@@ -1,1 +1,1 @@
-cb4881c59eb474478ce8016794d48c763766136a582a1c02d131e150ede12885  ./target/wasm32-unknown-unknown/release/terra_peep721.wasm
+ca782d68917f832f4aa8b7c8aa40ca5a58380de012d20973b472dd95250738b7  ./target/wasm32-unknown-unknown/release/terra_peep721.wasm

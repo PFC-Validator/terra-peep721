@@ -120,6 +120,27 @@
       "additionalProperties": false
     },
     {
+      "description": "How many changes has occurred to this token",
+      "type": "object",
+      "required": [
+        "change_dynamics"
+      ],
+      "properties": {
+        "change_dynamics": {
+          "type": "object",
+          "required": [
+            "token_id"
+          ],
+          "properties": {
+            "token_id": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "With MetaData Extension. Returns metadata about one particular token, based on *ERC721 Metadata JSON Schema* but directly from the contract: `NftInfoResponse`",
       "type": "object",
       "required": [

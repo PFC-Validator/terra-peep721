@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
+    BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdError,
+    StdResult, Uint128,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -13,7 +14,9 @@ use crate::error::ContractError;
 use crate::extension::{MetaDataPersonalization, MetaPersonalize};
 
 use crate::msg::{BuyMsg, ExecuteMsg, InstantiateMsg, MintMsg};
-use crate::state::{Approval, Cw721Contract, NftListing, NftTraitSummary, TokenInfo};
+use crate::state::{
+    Approval, ChangeDynamics, Cw721Contract, NftListing, NftTraitSummary, TokenInfo,
+};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:terra-peep721";
@@ -194,7 +197,13 @@ where
             owner: deps.api.addr_validate(&msg.owner)?,
             approvals: vec![],
             token_uri: msg.token_uri.clone(),
-            extension: msg.extension.clone(),
+            extension: msg.extension.clone(), /*
+                                              change_count: 0,
+                                              unique_owners: vec![],
+                                              transfer_count: 0,
+                                              block_number: 0,
+                                              price_ceiling: Default::default()
+                                              */
         };
         if let Some(token_uri) = msg.token_uri.clone() {
             if let Ok(_x) = self.tokens_uri.load(deps.storage, &token_uri) {
@@ -723,12 +732,37 @@ where
         token_id: &str,
     ) -> Result<TokenInfo<T>, ContractError> {
         let mut token = self.tokens.load(deps.storage, token_id)?;
+        let old_owner = token.owner.clone();
         // ensure we have permissions
         self.check_can_send(deps.as_ref(), env, info, &token)?;
         // set owner and remove existing approvals
         token.owner = deps.api.addr_validate(recipient)?;
         token.approvals = vec![];
         self.tokens.save(deps.storage, token_id, &token)?;
+        let mut change_dynamics = match self.change_dynamics.load(deps.storage, token_id) {
+            Ok(c) => c,
+
+            Err(e) => match e {
+                StdError::NotFound { .. } => ChangeDynamics {
+                    owner: old_owner.clone(),
+                    token_id: token_id.to_string(),
+                    change_count: 0,
+                    unique_owners: vec![old_owner.clone()],
+                    transfer_count: 0,
+                    block_number: 0,
+                    price_ceiling: Default::default(),
+                },
+                _ => Err(e)?,
+            },
+        };
+        change_dynamics.transfer_count += 1;
+        if !change_dynamics.unique_owners.contains(&token.owner) {
+            change_dynamics.unique_owners.push(token.owner.clone());
+        }
+        change_dynamics.owner = token.owner.clone();
+
+        self.change_dynamics
+            .save(deps.storage, token_id, &change_dynamics)?;
         Ok(token)
     }
 
@@ -748,6 +782,7 @@ where
         token.extension.set_status(status);
         //   token.approvals = vec![];
         self.tokens.save(deps.storage, token_id, &token)?;
+
         Ok(token)
     }
 
@@ -761,8 +796,44 @@ where
         description: &Option<String>,
     ) -> Result<TokenInfo<T>, ContractError> {
         let mut token = self.tokens.load(deps.storage, token_id)?;
+        let mut old_exists = false;
         // ensure we have permissions
         self.check_can_send(deps.as_ref(), env, info, &token)?;
+        let mut change_dynamics = match self.change_dynamics.load(deps.storage, token_id) {
+            Ok(c) => {
+                old_exists = true;
+                c
+            }
+
+            Err(e) => match e {
+                StdError::NotFound { .. } => ChangeDynamics {
+                    owner: token.owner.clone(),
+                    token_id: token_id.to_string(),
+                    change_count: 0,
+                    unique_owners: vec![token.owner.clone()],
+                    transfer_count: 0,
+                    block_number: 0,
+                    price_ceiling: Default::default(),
+                },
+                _ => Err(e)?,
+            },
+        };
+
+        let change_cost = self.change_amount(deps.storage)?;
+        let change_multiplier = self.change_multiplier(deps.storage)?;
+
+        let change_count = change_dynamics.change_count;
+        let cost = change_cost * (change_count / change_multiplier);
+        if cost > 0 {
+            if let Some(coins) = info.funds.first() {
+                if coins.denom != "uusd" || coins.amount < Uint128::from(cost) {
+                    return Err(ContractError::Funds {});
+                }
+            } else {
+                return Err(ContractError::Funds {});
+            }
+        }
+        change_dynamics.change_count += 1;
 
         // set owner and remove existing approvals
         if let Some(desc) = description {
@@ -773,7 +844,7 @@ where
                 Ok(_) => return Err(ContractError::Claimed {}),
                 Err(_) => {
                     token.extension.set_name(Some(nam.clone()));
-                    self.tokens.save(deps.storage, nam, &token.clone())?;
+                    self.tokens.save(deps.storage, nam, &token)?;
                     self.tokens.remove(deps.storage, token_id)?;
                     self.tokens_uri
                         .save(deps.storage, &token.extension.get_token_uri(), nam)?;
@@ -784,11 +855,19 @@ where
                         self.image_uri.save(deps.storage, &img, nam)?;
                         //   self.image_uri.remove(deps.storage, &img)?;
                     }
+                    if old_exists {
+                        self.change_dynamics.remove(deps.storage, token_id)?;
+                    }
+                    change_dynamics.token_id = nam.to_string();
+                    self.change_dynamics
+                        .save(deps.storage, nam, &change_dynamics)?;
                 }
             }
         } else {
             // just a description change.. no need to mess with the indexes
             self.tokens.save(deps.storage, token_id, &token)?;
+            self.change_dynamics
+                .save(deps.storage, token_id, &change_dynamics)?;
         }
 
         Ok(token)

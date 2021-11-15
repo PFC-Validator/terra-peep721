@@ -8,7 +8,7 @@ terrad tx wasm instantiate 16395 ${json} --chain-id bombay-12 --gas auto --from 
 #terrad tx wasm migrate terra1qdg78ja9xenjny6rn6nmtv2lj3u8jht0x3w5zd 13048 '{}' --from terrapeep --chain-id bombay-12 --fees 2640uluna
 #terrad tx wasm migrate terra1qdg78ja9xenjny6rn6nmtv2lj3u8jht0x3w5zd 17460 '{}' --from terrapeep --chain-id bombay-12 --fees 2640uluna
 terrad tx wasm migrate terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav 19526 '{}'  --from terrapeep --chain-id bombay-12 --fees 2640uluna
-terrad tx wasm migrate terra1t0l0sz0efnr7cm3hxked7nn2x7xx5syw02k8tc 1138 '{}'  --from terrapeep --chain-id columbus-5 --fees 1ukrt
+terrad tx wasm migrate terra1t0l0sz0efnr7cm3hxked7nn2x7xx5syw02k8tc 1207 '{}'  --from terrapeep --chain-id columbus-5 --fees 1ukrt
 terrad tx wasm execute terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav  '{"set_public_key":{"public_key":"Ar5vm8QmL/RsBjSWaxgFizKhUrR4khjr4ax4wUgW4E2I"}}' --from terrapeep --chain-id bombay-12 --fees 2640uluna
 terrad tx wasm execute terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav  '{"set_image_prefix":{"prefix":"ipfs://"}}' --from terrapeep --chain-id bombay-12 --fees 2640uluna
 terrad tx wasm execute terra1t0l0sz0efnr7cm3hxked7nn2x7xx5syw02k8tc  '{"set_image_prefix":{"prefix":"ipfs://"}}' --from terrapeep --chain-id columbus-5 --fees 2640uluna
@@ -23,3 +23,8 @@ terrad tx wasm execute terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav  '{"set_nft_
 terrad tx wasm execute terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav  '{"set_nft_contract_keybase_verification":{"message":"BEGIN KEYBASE SALTPACK SIGNED MESSAGE. kXR7VktZdyH7rvq v5weRa0zkH5AIyr 3umKVRMhKww3gXI qrfP0jw7xJlFi0n Lixvh7zuMv8Ghlv oADFpUoda5kqOfU DSwWhO6GQoF5GaF 5qFpCLUUYXX4LN6 r2mEbATEubuvqV9 x0XGP6YszXxAoo8 dvkEdXq5JZgqdCe kVT1LdU6Qr3lLyV 4VG6KEseWTUcBRk PDJNeHW9pN9gMxi . END KEYBASE SALTPACK SIGNED MESSAGE."}}' --from terrapeep --chain-id bombay-12 --fees 2640uluna
 
 terrad tx wasm execute terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav  '{"migrate20211113":{}}' --from terrapeep --chain-id bombay-12 --fees 2640uluna
+terrad tx wasm execute terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav  '{"set_token_name_description":{"token_id":"Michele Yang","name":"Michelle Yang","description":null}}' --from terrapeep --chain-id bombay-12 --fees 2640uluna
+terrad tx wasm execute terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav  '{"set_change_amount":{"change_amount":1000000}}' --from terrapeep --chain-id bombay-12 --fees 2640uluna
+terrad tx wasm execute terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav  '{"set_change_times_multiplier":{"change_multiplier":2}}' --from terrapeep --chain-id bombay-12 --fees 2640uluna
+terrad tx wasm execute terra1m0rjzm27qetjj8fx89knnhl8frvlrmjcfultav  '{"transfer_nft":{"recipient":"terra17rqj0zy45x4d26kdu5pgnwccyj2k2m237p7y70","token_id":"Michelle Chan"}}' --from terrapeep --chain-id bombay-12 --fees 2640uluna
+terrad tx wasm execute terra1t0l0sz0efnr7cm3hxked7nn2x7xx5syw02k8tc  '{"set_token_name_description":{"token_id":"Tesla",name:null,"description":"If you’re slow in crypto ngmi. Crypto is perfect competition codified - you sprint or you die.Tl;dr come work with me, I’ll give you a piggyback ride"}}' --from terrapeep --chain-id columbus-5 --fees 2640uluna

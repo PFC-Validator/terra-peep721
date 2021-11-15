@@ -3,7 +3,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
-use cosmwasm_std::{Addr, BlockInfo, Decimal, StdResult, Storage};
+use cosmwasm_std::{Addr, BlockInfo, Decimal, StdResult, Storage, Uint128};
 
 use crate::extension::MetaDataPersonalization;
 use cw721::{ContractInfoResponse, CustomMsg, Cw721, Expiration};
@@ -67,7 +67,7 @@ where
     pub tokens_uri: IndexedMap<'a, &'a str, String, TokenIndexString<'a>>,
     pub image_uri: IndexedMap<'a, &'a str, String, TokenIndexString<'a>>,
     pub image_prefix: Item<'a, String>,
-
+    pub change_dynamics: IndexedMap<'a, &'a str, ChangeDynamics, ChangeDynamicsIndexes<'a>>,
     pub(crate) _custom_response: PhantomData<C>,
 }
 
@@ -104,6 +104,8 @@ where
             "image_uri__owner",
             "change_amount",
             "change_multiplier",
+            "change_dynamics",
+            "change_dynamics__owner",
         )
     }
 }
@@ -133,6 +135,8 @@ where
         image_uri_owner_key: &'a str,
         change_amount: &'a str,
         change_multiplier: &'a str,
+        change_dynamics_key: &'a str,
+        change_dynamics_owner_key: &'a str,
     ) -> Self {
         let indexes = TokenIndexes {
             owner: MultiIndex::new(token_owner_idx, tokens_key, tokens_owner_key),
@@ -143,6 +147,14 @@ where
         let image_indexes = TokenIndexString {
             owner: MultiIndex::new(image_uri_idx_string, image_uri_key, image_uri_owner_key),
         };
+        let change_dynamics_indexes = ChangeDynamicsIndexes {
+            owner: MultiIndex::new(
+                token_owner_idx_change_dynamics,
+                change_dynamics_key,
+                change_dynamics_owner_key,
+            ),
+        };
+
         Self {
             contract_info: Item::new(contract_key),
             minter: Item::new(minter_key),
@@ -160,6 +172,7 @@ where
             nft_contract_info: Item::new(nft_contract_info_key),
             trait_map: Item::new(trait_map_key),
             keybase_message: Item::new(keybase_message_key),
+            change_dynamics: IndexedMap::new(change_dynamics_key, change_dynamics_indexes),
             _custom_response: PhantomData,
         }
     }
@@ -235,6 +248,20 @@ where
     }
 }
 
+/// History of token changes
+/// this is a separate struct as it happened after v1.. and migrations are challenging
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ChangeDynamics {
+    pub owner: Addr,
+    pub token_id: String,
+    /// how many changes have occurred to this token
+    pub change_count: u64,
+    pub unique_owners: Vec<Addr>,
+    pub transfer_count: u64,
+    pub block_number: u64,
+    pub price_ceiling: Uint128,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct TokenInfo<T> {
     /// The owner of the newly minted NFT
@@ -290,8 +317,22 @@ where
         Box::new(v.into_iter())
     }
 }
-
 pub fn token_owner_idx<T>(d: &TokenInfo<T>, k: Vec<u8>) -> (Addr, Vec<u8>) {
+    (d.owner.clone(), k)
+}
+
+pub struct ChangeDynamicsIndexes<'a> {
+    // pk goes to second tuple element
+    pub owner: MultiIndex<'a, (Addr, Vec<u8>), ChangeDynamics>,
+}
+
+impl<'a> IndexList<ChangeDynamics> for ChangeDynamicsIndexes<'a> {
+    fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<ChangeDynamics>> + '_> {
+        let v: Vec<&dyn Index<ChangeDynamics>> = vec![&self.owner];
+        Box::new(v.into_iter())
+    }
+}
+pub fn token_owner_idx_change_dynamics(d: &ChangeDynamics, k: Vec<u8>) -> (Addr, Vec<u8>) {
     (d.owner.clone(), k)
 }
 

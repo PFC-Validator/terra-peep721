@@ -12,7 +12,7 @@ use cw721::{
 use cw_storage_plus::Bound;
 
 use crate::msg::{MinterResponse, QueryMsg};
-use crate::state::{Approval, Cw721Contract, TokenInfo};
+use crate::state::{Approval, ChangeDynamics, Cw721Contract, TokenInfo};
 
 const DEFAULT_LIMIT: u32 = 10;
 const MAX_LIMIT: u32 = 30;
@@ -237,6 +237,9 @@ where
             QueryMsg::NftContractKeybaseVerification {} => {
                 to_binary(&self.nft_contract_keybase_verification(deps.storage)?)
             }
+            QueryMsg::ChangeDynamics { token_id } => {
+                to_binary(&self.token_change_dynamics(deps, env, token_id)?)
+            }
         }
     }
     fn all_img_tokens(
@@ -296,6 +299,32 @@ where
                 token_uri: info.token_uri,
                 extension: info.extension,
             })
+        }
+    }
+
+    pub(crate) fn token_change_dynamics(
+        &self,
+        deps: Deps,
+        _env: Env,
+        token_id: String,
+    ) -> StdResult<ChangeDynamics> {
+        let info = self.change_dynamics.load(deps.storage, &token_id);
+        match info {
+            Ok(info) => Ok(info),
+            Err(StdError::NotFound { .. }) => {
+                // as we only create a record once a change is done.. we verify the token exists this way
+                let token = self.tokens.load(deps.storage, &token_id)?;
+                Ok(ChangeDynamics {
+                    owner: token.owner.clone(),
+                    token_id,
+                    change_count: 0,
+                    unique_owners: vec![token.owner],
+                    transfer_count: 0,
+                    block_number: 0,
+                    price_ceiling: Default::default(),
+                })
+            }
+            Err(e) => Err(e),
         }
     }
 }

@@ -173,6 +173,8 @@ pub enum QueryMsg {
     /// Returns metadata about one particular token, based on *ERC721 Metadata JSON Schema*
     /// but directly from the contract: `NftInfoResponse`
     NftInfo { token_id: String },
+    /// How many changes has occurred to this token
+    ChangeDynamics { token_id: String },
     /// With MetaData Extension.
     /// Returns metadata about one particular token, based on *ERC721 Metadata JSON Schema*
     /// but directly from the contract: `NftInfoResponse`
