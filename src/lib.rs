@@ -13,7 +13,7 @@ pub use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, MintMsg, MinterResp
 
 use crate::state::Cw721Contract;
 //use cosmwasm_std::Order;
-use cw_storage_plus::{IndexedMap, MultiIndex};
+//use cw_storage_plus::{IndexedMap, MultiIndex};
 // This is a simple type to let us handle empty extensions
 pub type Extension = extension::Metadata;
 pub type BuyExtension = extension::BuyMetaData;
@@ -25,7 +25,7 @@ pub mod entry {
 
     //use crate::extension::MetaDataPersonalization;
 
-    use crate::state::{token_owner_idx_change_dynamics, ChangeDynamicsIndexes};
+    //use crate::state::{token_owner_idx_change_dynamics, ChangeDynamicsIndexes};
     use cosmwasm_std::entry_point;
     use cosmwasm_std::{Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult};
 

@@ -747,12 +747,12 @@ where
                     owner: old_owner.clone(),
                     token_id: token_id.to_string(),
                     change_count: 0,
-                    unique_owners: vec![old_owner.clone()],
+                    unique_owners: vec![old_owner],
                     transfer_count: 0,
                     block_number: 0,
                     price_ceiling: Default::default(),
                 },
-                _ => Err(e)?,
+                _ => return Err(e.into()),
             },
         };
         change_dynamics.transfer_count += 1;
@@ -815,7 +815,7 @@ where
                     block_number: 0,
                     price_ceiling: Default::default(),
                 },
-                _ => Err(e)?,
+                _ => return Err(e.into()),
             },
         };
 
@@ -840,7 +840,7 @@ where
             token.extension.set_description(Some(desc.clone()));
         }
         if let Some(nam) = name {
-            if nam.is_empty() || nam.len() < 1 {
+            if nam.is_empty() {
                 self.tokens.save(deps.storage, token_id, &token)?;
                 self.change_dynamics
                     .save(deps.storage, token_id, &change_dynamics)?;
@@ -1019,7 +1019,7 @@ where
         self._set_name_description(deps, &env, &info, &token_id, &name, &description)?;
 
         if let Some(name_in) = name {
-            if name_in.is_empty() || name_in.len() < 1 {
+            if name_in.is_empty() {
                 Ok(Response::new()
                     .add_attribute("action", "change_name")
                     .add_attribute("sender", info.sender)
