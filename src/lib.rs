@@ -59,18 +59,19 @@ pub mod entry {
     }
     #[entry_point]
     pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
-        let mut tract = Cw721Contract::<Extension, Empty>::default();
-        let change_dynamics_key = "change_dynamics";
-        let change_dynamics_owner_key = "change_dynamics__owner";
-        let change_dynamics_indexes = ChangeDynamicsIndexes {
-            owner: MultiIndex::new(
-                token_owner_idx_change_dynamics,
-                change_dynamics_key,
-                change_dynamics_owner_key,
-            ),
-        };
-        tract.change_dynamics = IndexedMap::new(change_dynamics_key, change_dynamics_indexes);
-
+        /*
+                let mut tract = Cw721Contract::<Extension, Empty>::default();
+                let change_dynamics_key = "change_dynamics";
+                let change_dynamics_owner_key = "change_dynamics__owner";
+                let change_dynamics_indexes = ChangeDynamicsIndexes {
+                    owner: MultiIndex::new(
+                        token_owner_idx_change_dynamics,
+                        change_dynamics_key,
+                        change_dynamics_owner_key,
+                    ),
+                };
+                tract.change_dynamics = IndexedMap::new(change_dynamics_key, change_dynamics_indexes);
+        */
         Ok(Response::default())
     }
 }
