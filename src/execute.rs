@@ -1,17 +1,17 @@
 use cosmwasm_std::{
-    BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdError,
-    StdResult, Uint128,
+    BankMsg, Binary, Coin, CosmosMsg, Decimal, Deps, DepsMut, Env, MessageInfo, QuerierWrapper,
+    Response, StdError, StdResult, Uint128,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
-use cw2::set_contract_version;
-use cw721::{ContractInfoResponse, CustomMsg, Cw721Execute, Cw721ReceiveMsg, Expiration};
-use terraswap::querier::query_balance;
-
 use crate::error::ContractError;
 use crate::extension::{MetaDataPersonalization, MetaPersonalize};
+use cw2::set_contract_version;
+use cw721::{ContractInfoResponse, CustomMsg, Cw721Execute, Cw721ReceiveMsg, Expiration};
+use terra_cosmwasm::TerraQuerier;
+use terraswap::querier::query_balance;
 
 use crate::msg::{BuyMsg, ExecuteMsg, InstantiateMsg, MintMsg};
 use crate::state::{
@@ -25,6 +25,8 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const ECDSA_COMPRESSED_PUBKEY_LEN: usize = 33;
 /// Length of a serialized uncompressed public key
 const ECDSA_UNCOMPRESSED_PUBKEY_LEN: usize = 65;
+static DECIMAL_FRACTION: Uint128 = Uint128::new(1_000_000_000_000_000_000u128);
+
 impl<'a, T, C> Cw721Contract<'a, T, C>
 where
     T: Serialize + DeserializeOwned + Clone + MetaDataPersonalization,
@@ -579,12 +581,36 @@ where
         if amount.is_zero() {
             return Err(ContractError::NoFunds {});
         }
+        let tax_amount =
+            Self::compute_tax(&deps.querier, amount, denom.clone())? + Uint128::new(1u128);
+        if tax_amount > amount {
+            return Err(ContractError::FundsTooSmall {});
+        }
         Ok(Response::new()
             .add_attribute("sweep", denom.clone())
             .add_message(CosmosMsg::Bank(BankMsg::Send {
                 to_address: info.sender.to_string(),
-                amount: vec![Coin { denom, amount }],
+                amount: vec![Coin {
+                    denom,
+                    amount: amount - tax_amount,
+                }],
             })))
+    }
+    fn compute_tax(querier: &QuerierWrapper, amount: Uint128, denom: String) -> StdResult<Uint128> {
+        if denom == "uluna" {
+            return Ok(Uint128::zero());
+        }
+
+        let terra_querier = TerraQuerier::new(querier);
+        let tax_rate: Decimal = (terra_querier.query_tax_rate()?).rate;
+        let tax_cap: Uint128 = (terra_querier.query_tax_cap(denom)?).cap;
+        Ok(std::cmp::min(
+            amount.checked_sub(amount.multiply_ratio(
+                DECIMAL_FRACTION,
+                DECIMAL_FRACTION * tax_rate + DECIMAL_FRACTION,
+            ))?,
+            tax_cap,
+        ))
     }
 }
 

@@ -675,7 +675,7 @@ dependencies = [
 
 [[package]]
 name = "terra-peep721"
-version = "0.4.5"
+version = "0.4.6"
 dependencies = [
  "base64",
  "cosmwasm-schema",
@@ -689,6 +689,7 @@ dependencies = [
  "serde",
  "serde-json-wasm",
  "sha2 0.8.2",
+ "terra-cosmwasm",
  "terraswap",
  "thiserror",
 ]

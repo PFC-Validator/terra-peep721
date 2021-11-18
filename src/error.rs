@@ -13,6 +13,8 @@ pub enum ContractError {
     Funds {},
     #[error("No Balance in that denomination")]
     NoFunds {},
+    #[error("Not enough funds to cover the tax")]
+    FundsTooSmall {},
     #[error("Signature doesn't match")]
     BadSignature {},
 
