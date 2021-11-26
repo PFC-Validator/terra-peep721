@@ -3,6 +3,8 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
+    "change_amount",
+    "change_multiplier",
     "max_issuance",
     "mint_amount",
     "minter",
@@ -11,6 +13,18 @@
     "symbol"
   ],
   "properties": {
+    "change_amount": {
+      "description": "minimum amount of uusd to execute a change message",
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "change_multiplier": {
+      "description": "price change multiplier",
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
     "max_issuance": {
       "description": "max amount of tokens to issue",
       "type": "integer",

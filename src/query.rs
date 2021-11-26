@@ -12,7 +12,7 @@ use cw721::{
 use cw_storage_plus::Bound;
 
 use crate::msg::{MinterResponse, QueryMsg};
-use crate::state::{Approval, Cw721Contract, TokenInfo};
+use crate::state::{Approval, ChangeDynamics, Cw721Contract, TokenInfo};
 
 const DEFAULT_LIMIT: u32 = 10;
 const MAX_LIMIT: u32 = 30;
@@ -181,6 +181,7 @@ where
             QueryMsg::Minter {} => to_binary(&self.minter(deps)?),
             QueryMsg::ContractInfo {} => to_binary(&self.contract_info(deps)?),
             QueryMsg::NftInfo { token_id } => to_binary(&self.nft_info(deps, token_id)?),
+            QueryMsg::ImageInfo { img_uri } => to_binary(&self.image_info(deps, img_uri)?),
             QueryMsg::OwnerOf {
                 token_id,
                 include_expired,
@@ -218,11 +219,15 @@ where
             QueryMsg::AllTokens { start_after, limit } => {
                 to_binary(&self.all_tokens(deps, start_after, limit)?)
             }
+            QueryMsg::AllImgTokens { start_after, limit } => {
+                to_binary(&self.all_img_tokens(deps, start_after, limit)?)
+            }
             QueryMsg::RangeTokens { start_after, limit } => {
                 to_binary(&self.page_tokens(deps, start_after, limit)?)
             }
             QueryMsg::PublicKey {} => to_binary(&self.public_key(deps.storage)?),
             QueryMsg::MintAmount {} => to_binary(&self.mint_amount(deps.storage)?),
+            QueryMsg::ChangeDetails {} => to_binary(&self.change_details(deps.storage)?),
             QueryMsg::TotalSupply {} => to_binary(&self.max_issuance(deps.storage)?),
             QueryMsg::ImagePrefix {} => to_binary(&self.image_prefix(deps.storage)?),
             QueryMsg::NftContractInfo {} => to_binary(&self.nft_contract_info(deps.storage)?),
@@ -232,7 +237,29 @@ where
             QueryMsg::NftContractKeybaseVerification {} => {
                 to_binary(&self.nft_contract_keybase_verification(deps.storage)?)
             }
+            QueryMsg::ChangeDynamics { token_id } => {
+                to_binary(&self.token_change_dynamics(deps, env, token_id)?)
+            }
         }
+    }
+    fn all_img_tokens(
+        &self,
+        deps: Deps,
+        start_after: Option<String>,
+        limit: Option<u32>,
+    ) -> StdResult<TokensResponse> {
+        let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
+        let start = start_after.map(Bound::exclusive);
+
+        let tokens: StdResult<Vec<String>> = self
+            .image_uri
+            .range(deps.storage, start, None, Order::Ascending)
+            .take(limit)
+            .map(|item| {
+                item.map(|(k, x)| format!("{}/{}", String::from_utf8_lossy(&k).to_string(), x))
+            })
+            .collect();
+        Ok(TokensResponse { tokens: tokens? })
     }
     fn page_tokens(
         &self,
@@ -249,6 +276,56 @@ where
             .map(|item| item.map(|(k, _)| String::from_utf8_lossy(&k).to_string()))
             .collect();
         Ok(TokensResponse { tokens: tokens? })
+    }
+
+    pub(crate) fn image_info(
+        &self,
+        deps: Deps,
+        image_uri: String,
+    ) -> StdResult<NftInfoResponse<T>> {
+        let prefix = self.image_prefix(deps.storage)?;
+        let token_id = self.image_uri.load(deps.storage, &image_uri)?;
+        let info = self.tokens.load(deps.storage, &token_id)?;
+        if let Some(image) = info.extension.get_image(&prefix) {
+            let mut extension = info.extension.clone();
+            extension.set_image(Some(image));
+
+            Ok(NftInfoResponse {
+                token_uri: info.token_uri,
+                extension,
+            })
+        } else {
+            Ok(NftInfoResponse {
+                token_uri: info.token_uri,
+                extension: info.extension,
+            })
+        }
+    }
+
+    pub(crate) fn token_change_dynamics(
+        &self,
+        deps: Deps,
+        _env: Env,
+        token_id: String,
+    ) -> StdResult<ChangeDynamics> {
+        let info = self.change_dynamics.load(deps.storage, &token_id);
+        match info {
+            Ok(info) => Ok(info),
+            Err(StdError::NotFound { .. }) => {
+                // as we only create a record once a change is done.. we verify the token exists this way
+                let token = self.tokens.load(deps.storage, &token_id)?;
+                Ok(ChangeDynamics {
+                    owner: token.owner.clone(),
+                    token_id,
+                    change_count: 0,
+                    unique_owners: vec![token.owner],
+                    transfer_count: 0,
+                    block_number: 0,
+                    price_ceiling: Default::default(),
+                })
+            }
+            Err(e) => Err(e),
+        }
     }
 }
 
