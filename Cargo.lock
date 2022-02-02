@@ -675,11 +675,12 @@ dependencies = [
 
 [[package]]
 name = "terra-peep721"
-version = "0.4.6"
+version = "0.4.7"
 dependencies = [
  "base64",
  "cosmwasm-schema",
  "cosmwasm-std",
+ "cosmwasm-storage",
  "cw-storage-plus",
  "cw0 0.9.1",
  "cw2",
