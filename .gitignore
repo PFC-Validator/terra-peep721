@@ -13,3 +13,4 @@
 # IDEs
 *.iml
 .idea
+/.env
