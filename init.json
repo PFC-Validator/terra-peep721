@@ -1,1 +1,7 @@
-{"name":"TerraPeeps","symbol":"PEEPS","minter":"terra1d85ncnvn822u5lul9kf8430dd3chyjd3ka2f98","public_key":"AiMzHaA2bvnDXfHzkjMM+vkSE/p0ymBtAFKUnUtQAeXe","mint_amount": 3000000}
+{
+  "name": "TerraPeeps",
+  "symbol": "PEEPS",
+  "minter": "terra1d85ncnvn822u5lul9kf8430dd3chyjd3ka2f98",
+  "public_key": "AiMzHaA2bvnDXfHzkjMM+vkSE/p0ymBtAFKUnUtQAeXe",
+  "mint_amount": 3000000
+}
