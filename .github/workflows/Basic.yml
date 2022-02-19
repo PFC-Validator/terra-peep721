@@ -37,6 +37,31 @@ jobs:
         env:
           RUSTFLAGS: "-C link-arg=-s"
 
+      - name: generate schema
+        uses: actions-rs/cargo@v1
+        with:
+          command: schema
+          args: --locked
+
+      - name: Build Artifacts
+        run: |
+            docker run --rm -v "$(pwd)":/code \
+            --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+                  cosmwasm/workspace-optimizer:0.12.5
+
+      - name: Commit files
+        run: |
+          git config --local user.email "81114960+PFC-developer@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add artifacts
+          git commit -m "Artifact generation"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
   lints:
     name: Lints
     runs-on: ubuntu-latest
