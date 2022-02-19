@@ -24,6 +24,10 @@ pub struct InstantiateMsg {
     pub public_key: String,
     /// minimum amount of uluna to buy via BUY message
     pub mint_amount: u64,
+    /// minimum amount of uusd to execute a change message
+    pub change_amount: u64,
+    /// price change multiplier
+    pub change_multiplier: u64,
     /// max amount of tokens to issue
     pub max_issuance: u64,
 }
@@ -66,16 +70,28 @@ where
 
     /// Mint a new NFT, can only be called by the contract minter
     Mint(MintMsg<T>),
+    /// Burn an NFT the sender has access to
+    Burn { token_id: String },
     /// Allow a buyer to mint a NFT directly
     Buy(BuyMsg),
     /// Owner function: Sends coins in the contract to admin
     Sweep { denom: String },
     /// Owner function: change public key
     SetPublicKey { public_key: String },
-    /// Owner function: change mint price
+    /// Owner function: change mint price (uluna)
     SetMintAmount { mint_amount: u64 },
+    /// Owner function: change change #times multipler)
+    SetChangeTimesMultiplier { change_multiplier: u64 },
+    /// Owner function: change change name price (uusd)
+    SetChangeAmount { change_amount: u64 },
     /// User message: allow owner to change status field of NFT
     SetTokenStatus { status: String, token_id: String },
+    /// User message: allow owner to change name & description field of NFT
+    SetTokenNameDescription {
+        description: Option<String>,
+        name: Option<String>,
+        token_id: String,
+    },
     /// Owner message: change prefix for images. defaults to ipfs://
     SetImagePrefix { prefix: String },
     /// Owner message: Set information about the NFT Collection
@@ -157,6 +173,12 @@ pub enum QueryMsg {
     /// Returns metadata about one particular token, based on *ERC721 Metadata JSON Schema*
     /// but directly from the contract: `NftInfoResponse`
     NftInfo { token_id: String },
+    /// How many changes has occurred to this token
+    ChangeDynamics { token_id: String },
+    /// With MetaData Extension.
+    /// Returns metadata about one particular token, based on *ERC721 Metadata JSON Schema*
+    /// but directly from the contract: `NftInfoResponse`
+    ImageInfo { img_uri: String },
     /// With MetaData Extension.
     /// Returns the result of both `NftInfo` and `OwnerOf` as one query as an optimization
     /// for clients: `AllNftInfo`
@@ -181,6 +203,10 @@ pub enum QueryMsg {
         start_after: Option<String>,
         limit: Option<u32>,
     },
+    AllImgTokens {
+        start_after: Option<String>,
+        limit: Option<u32>,
+    },
     /// With Enumerable extension.
     /// Requires pagination. Lists all token_ids controlled by the contract.
     /// Return type: TokensResponse.
@@ -195,6 +221,8 @@ pub enum QueryMsg {
     PublicKey {},
     /// Return the mint amount
     MintAmount {},
+    /// Return the change amount and multiplier
+    ChangeDetails {},
     /// Return the total supply
     TotalSupply {},
     /// Return the prefix for the images. defaults to ipfs://

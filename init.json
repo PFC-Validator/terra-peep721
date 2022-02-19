@@ -1,7 +1,10 @@
 {
   "name": "TerraPeeps",
   "symbol": "PEEPS",
-  "minter": "terra1d85ncnvn822u5lul9kf8430dd3chyjd3ka2f98",
+  "minter":  "##SENDER##",
   "public_key": "AiMzHaA2bvnDXfHzkjMM+vkSE/p0ymBtAFKUnUtQAeXe",
+  "change_amount": 1000000,
+  "change_multiplier": 2,
+  "max_issuance": 1000,
   "mint_amount": 3000000
 }

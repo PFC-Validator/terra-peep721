@@ -1,19 +1,22 @@
 use cosmwasm_std::{
-    BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
+    BankMsg, Binary, Coin, CosmosMsg, Decimal, Deps, DepsMut, Env, MessageInfo, QuerierWrapper,
+    Response, StdError, StdResult, Uint128,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
-use cw2::set_contract_version;
-use cw721::{ContractInfoResponse, CustomMsg, Cw721Execute, Cw721ReceiveMsg, Expiration};
-use terraswap::querier::query_balance;
-
 use crate::error::ContractError;
 use crate::extension::{MetaDataPersonalization, MetaPersonalize};
+use cw2::set_contract_version;
+use cw721::{ContractInfoResponse, CustomMsg, Cw721Execute, Cw721ReceiveMsg, Expiration};
+use terra_cosmwasm::TerraQuerier;
+use terraswap::querier::query_balance;
 
 use crate::msg::{BuyMsg, ExecuteMsg, InstantiateMsg, MintMsg};
-use crate::state::{Approval, Cw721Contract, NftListing, NftTraitSummary, TokenInfo};
+use crate::state::{
+    Approval, ChangeDynamics, Cw721Contract, NftListing, NftTraitSummary, TokenInfo,
+};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:terra-peep721";
@@ -22,6 +25,8 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const ECDSA_COMPRESSED_PUBKEY_LEN: usize = 33;
 /// Length of a serialized uncompressed public key
 const ECDSA_UNCOMPRESSED_PUBKEY_LEN: usize = 65;
+static DECIMAL_FRACTION: Uint128 = Uint128::new(1_000_000_000_000_000_000u128);
+
 impl<'a, T, C> Cw721Contract<'a, T, C>
 where
     T: Serialize + DeserializeOwned + Clone + MetaDataPersonalization,
@@ -59,6 +64,9 @@ where
         self.minter.save(deps.storage, &minter)?;
         self.public_key.save(deps.storage, &msg.public_key)?;
         self.mint_amount.save(deps.storage, &msg.mint_amount)?;
+        self.change_amount.save(deps.storage, &msg.change_amount)?;
+        self.change_multiplier
+            .save(deps.storage, &msg.change_multiplier)?;
         self.max_issuance.save(deps.storage, &msg.max_issuance)?;
         Ok(Response::default())
     }
@@ -84,6 +92,7 @@ where
     ) -> Result<Response<C>, ContractError> {
         match msg {
             ExecuteMsg::Mint(msg) => self.mint(deps, env, info, msg),
+            ExecuteMsg::Burn { token_id } => self.burn(deps, env, info, token_id),
             ExecuteMsg::Approve {
                 spender,
                 token_id,
@@ -113,10 +122,21 @@ where
             ExecuteMsg::SetMintAmount { mint_amount } => {
                 self.set_mint_amount(deps, env, info, mint_amount)
             }
+            ExecuteMsg::SetChangeAmount { change_amount } => {
+                self.set_change_amount(deps, env, info, change_amount)
+            }
+            ExecuteMsg::SetChangeTimesMultiplier { change_multiplier } => {
+                self.set_change_multiplier(deps, env, info, change_multiplier)
+            }
             ExecuteMsg::SetImagePrefix { prefix } => self.set_image_prefix(deps, env, info, prefix),
             ExecuteMsg::SetTokenStatus { token_id, status } => {
                 self.set_status(deps, env, info, token_id, status)
             }
+            ExecuteMsg::SetTokenNameDescription {
+                description,
+                name,
+                token_id,
+            } => self.set_name_description(deps, env, info, token_id, name, description),
             ExecuteMsg::SetNftContractInfo {
                 description,
                 src,
@@ -153,7 +173,7 @@ where
 // TODO pull this into some sort of trait extension??
 impl<'a, T, C> Cw721Contract<'a, T, C>
 where
-    T: Serialize + DeserializeOwned + Clone,
+    T: Serialize + DeserializeOwned + Clone + MetaDataPersonalization,
     C: CustomMsg,
 {
     pub fn mint(
@@ -179,13 +199,29 @@ where
             owner: deps.api.addr_validate(&msg.owner)?,
             approvals: vec![],
             token_uri: msg.token_uri.clone(),
-            extension: msg.extension,
+            extension: msg.extension.clone(), /*
+                                              change_count: 0,
+                                              unique_owners: vec![],
+                                              transfer_count: 0,
+                                              block_number: 0,
+                                              price_ceiling: Default::default()
+                                              */
         };
         if let Some(token_uri) = msg.token_uri.clone() {
             if let Ok(_x) = self.tokens_uri.load(deps.storage, &token_uri) {
                 return Err(ContractError::Claimed {});
             }
+        } else {
+            return Err(ContractError::TokenMissing {});
         }
+        if let Some(image_uri) = msg.extension.get_image_raw() {
+            if let Ok(_x) = self.image_uri.load(deps.storage, &image_uri) {
+                return Err(ContractError::ImageClaimed {});
+            }
+        } else {
+            return Err(ContractError::ImageMissing {});
+        }
+
         self.tokens
             .update(deps.storage, &msg.token_id, |old| match old {
                 Some(_) => Err(ContractError::Claimed {}),
@@ -198,6 +234,13 @@ where
                     None => Ok(token_uri.clone()),
                 })?;
         }
+        if let Some(image_uri) = msg.extension.get_image_raw() {
+            self.image_uri
+                .update(deps.storage, &image_uri, |old| match old {
+                    Some(_) => Err(ContractError::ImageClaimed {}),
+                    None => Ok(msg.token_id.clone()),
+                })?;
+        }
 
         self.increment_tokens(deps.storage)?;
 
@@ -205,6 +248,36 @@ where
             .add_attribute("action", "mint")
             .add_attribute("minter", info.sender)
             .add_attribute("token_id", msg.token_id))
+    }
+    fn burn(
+        &self,
+        deps: DepsMut,
+        env: Env,
+        info: MessageInfo,
+        token_id: String,
+    ) -> Result<Response<C>, ContractError> {
+        let token = self.tokens.load(deps.storage, &token_id)?;
+        self.check_can_send(deps.as_ref(), &env, &info, &token)?;
+
+        self.tokens.remove(deps.storage, &token_id)?;
+        if let Some(image) = &token.extension.get_image_raw() {
+            self.image_uri.remove(deps.storage, image)?;
+        }
+        if let Some(token_uri) = &token.token_uri {
+            self.tokens_uri.remove(deps.storage, token_uri)?;
+        }
+
+        self.decrement_tokens(deps.storage)?;
+        let total = self.max_issuance.load(deps.storage)?;
+        if total > 0 {
+            let new_total = total - 1;
+            self.max_issuance.save(deps.storage, &new_total)?;
+        }
+
+        Ok(Response::new()
+            .add_attribute("action", "burn")
+            .add_attribute("sender", info.sender)
+            .add_attribute("token_id", token_id))
     }
 }
 
@@ -261,11 +334,19 @@ where
                     owner: info.sender.clone(),
                     approvals: vec![],
                     token_uri: Some(token_uri.clone()),
-                    extension: extension_copy,
+                    extension: extension_copy.clone(),
                 };
                 if let Ok(_x) = self.tokens_uri.load(deps.storage, &token_uri) {
                     return Err(ContractError::Claimed {});
                 }
+                if let Some(image_uri) = extension_copy.get_image_raw() {
+                    if let Ok(_x) = self.image_uri.load(deps.storage, &image_uri) {
+                        return Err(ContractError::ImageClaimed {});
+                    }
+                } else {
+                    return Err(ContractError::ImageMissing {});
+                }
+
                 self.tokens
                     .update(deps.storage, &token_id, |old| match old {
                         Some(_) => Err(ContractError::Claimed {}),
@@ -274,7 +355,14 @@ where
                 self.tokens_uri
                     .update(deps.storage, &token_uri, |old| match old {
                         Some(_) => Err(ContractError::Claimed {}),
-                        None => Ok(token_uri.clone()),
+                        None => Ok(token_id.clone()),
+                    })?;
+                // note.. we checked this above
+                let image_uri = extension_copy.get_image_raw().unwrap_or_default();
+                self.image_uri
+                    .update(deps.storage, &image_uri, |old| match old {
+                        Some(_) => Err(ContractError::ImageClaimed {}),
+                        None => Ok(token_id.clone()),
                     })?;
 
                 self.increment_tokens(deps.storage)?;
@@ -308,6 +396,7 @@ where
             .add_attribute("sender", info.sender)
             .add_attribute("public_key", public_key))
     }
+
     pub fn set_mint_amount(
         &self,
         deps: DepsMut,
@@ -326,6 +415,47 @@ where
             .add_attribute("action", "approve")
             .add_attribute("sender", info.sender)
             .add_attribute("mint_amount", mint_amount_string))
+    }
+
+    pub fn set_change_amount(
+        &self,
+        deps: DepsMut,
+        _env: Env,
+        info: MessageInfo,
+        change_amount: u64,
+    ) -> Result<Response<C>, ContractError> {
+        let minter = self.minter.load(deps.storage)?;
+
+        if info.sender != minter {
+            return Err(ContractError::Unauthorized {});
+        }
+        self.change_amount.save(deps.storage, &change_amount)?;
+        let change_amount_string = format!("{}", change_amount);
+        Ok(Response::new()
+            .add_attribute("action", "approve")
+            .add_attribute("sender", info.sender)
+            .add_attribute("change_amount", change_amount_string))
+    }
+
+    pub fn set_change_multiplier(
+        &self,
+        deps: DepsMut,
+        _env: Env,
+        info: MessageInfo,
+        change_multiplier: u64,
+    ) -> Result<Response<C>, ContractError> {
+        let minter = self.minter.load(deps.storage)?;
+
+        if info.sender != minter {
+            return Err(ContractError::Unauthorized {});
+        }
+        self.change_multiplier
+            .save(deps.storage, &change_multiplier)?;
+        let change_multiplier_string = format!("{}", change_multiplier);
+        Ok(Response::new()
+            .add_attribute("action", "approve")
+            .add_attribute("sender", info.sender)
+            .add_attribute("change_multiplier", change_multiplier_string))
     }
 
     pub fn set_image_prefix(
@@ -451,12 +581,36 @@ where
         if amount.is_zero() {
             return Err(ContractError::NoFunds {});
         }
+        let tax_amount =
+            Self::compute_tax(&deps.querier, amount, denom.clone())? + Uint128::new(1u128);
+        if tax_amount > amount {
+            return Err(ContractError::FundsTooSmall {});
+        }
         Ok(Response::new()
             .add_attribute("sweep", denom.clone())
             .add_message(CosmosMsg::Bank(BankMsg::Send {
                 to_address: info.sender.to_string(),
-                amount: vec![Coin { denom, amount }],
+                amount: vec![Coin {
+                    denom,
+                    amount: amount - tax_amount,
+                }],
             })))
+    }
+    fn compute_tax(querier: &QuerierWrapper, amount: Uint128, denom: String) -> StdResult<Uint128> {
+        if denom == "uluna" {
+            return Ok(Uint128::zero());
+        }
+
+        let terra_querier = TerraQuerier::new(querier);
+        let tax_rate: Decimal = (terra_querier.query_tax_rate()?).rate;
+        let tax_cap: Uint128 = (terra_querier.query_tax_cap(denom)?).cap;
+        Ok(std::cmp::min(
+            amount.checked_sub(amount.multiply_ratio(
+                DECIMAL_FRACTION,
+                DECIMAL_FRACTION * tax_rate + DECIMAL_FRACTION,
+            ))?,
+            tax_cap,
+        ))
     }
 }
 
@@ -604,14 +758,40 @@ where
         token_id: &str,
     ) -> Result<TokenInfo<T>, ContractError> {
         let mut token = self.tokens.load(deps.storage, token_id)?;
+        let old_owner = token.owner.clone();
         // ensure we have permissions
         self.check_can_send(deps.as_ref(), env, info, &token)?;
         // set owner and remove existing approvals
         token.owner = deps.api.addr_validate(recipient)?;
         token.approvals = vec![];
         self.tokens.save(deps.storage, token_id, &token)?;
+        let mut change_dynamics = match self.change_dynamics.load(deps.storage, token_id) {
+            Ok(c) => c,
+
+            Err(e) => match e {
+                StdError::NotFound { .. } => ChangeDynamics {
+                    owner: old_owner.clone(),
+                    token_id: token_id.to_string(),
+                    change_count: 0,
+                    unique_owners: vec![old_owner],
+                    transfer_count: 0,
+                    block_number: 0,
+                    price_ceiling: Default::default(),
+                },
+                _ => return Err(e.into()),
+            },
+        };
+        change_dynamics.transfer_count += 1;
+        if !change_dynamics.unique_owners.contains(&token.owner) {
+            change_dynamics.unique_owners.push(token.owner.clone());
+        }
+        change_dynamics.owner = token.owner.clone();
+
+        self.change_dynamics
+            .save(deps.storage, token_id, &change_dynamics)?;
         Ok(token)
     }
+
     pub fn _set_status(
         &self,
         deps: DepsMut,
@@ -628,6 +808,103 @@ where
         token.extension.set_status(status);
         //   token.approvals = vec![];
         self.tokens.save(deps.storage, token_id, &token)?;
+
+        Ok(token)
+    }
+
+    pub fn _set_name_description(
+        &self,
+        deps: DepsMut,
+        env: &Env,
+        info: &MessageInfo,
+        token_id: &str,
+        name: &Option<String>,
+        description: &Option<String>,
+    ) -> Result<TokenInfo<T>, ContractError> {
+        let mut token = self.tokens.load(deps.storage, token_id)?;
+        let mut old_exists = false;
+        // ensure we have permissions
+        self.check_can_send(deps.as_ref(), env, info, &token)?;
+        let mut change_dynamics = match self.change_dynamics.load(deps.storage, token_id) {
+            Ok(c) => {
+                old_exists = true;
+                c
+            }
+
+            Err(e) => match e {
+                StdError::NotFound { .. } => ChangeDynamics {
+                    owner: token.owner.clone(),
+                    token_id: token_id.to_string(),
+                    change_count: 0,
+                    unique_owners: vec![token.owner.clone()],
+                    transfer_count: 0,
+                    block_number: 0,
+                    price_ceiling: Default::default(),
+                },
+                _ => return Err(e.into()),
+            },
+        };
+
+        let change_cost = self.change_amount(deps.storage)?;
+        let change_multiplier = self.change_multiplier(deps.storage)?;
+
+        let change_count = change_dynamics.change_count;
+        let cost = change_cost * (change_count / change_multiplier);
+        if cost > 0 {
+            if let Some(coins) = info.funds.first() {
+                if coins.denom != "uusd" || coins.amount < Uint128::from(cost) {
+                    return Err(ContractError::Funds {});
+                }
+            } else {
+                return Err(ContractError::Funds {});
+            }
+        }
+        change_dynamics.change_count += 1;
+
+        // set owner and remove existing approvals
+        if let Some(desc) = description {
+            token.extension.set_description(Some(desc.clone()));
+        }
+        if let Some(nam) = name {
+            if nam.is_empty() {
+                self.tokens.save(deps.storage, token_id, &token)?;
+                self.change_dynamics
+                    .save(deps.storage, token_id, &change_dynamics)?;
+            } else {
+                match self.tokens.load(deps.storage, nam) {
+                    Ok(_) => return Err(ContractError::Claimed {}),
+                    Err(_) => {
+                        token.extension.set_name(Some(nam.clone()));
+                        self.tokens.save(deps.storage, nam, &token)?;
+                        self.tokens.remove(deps.storage, token_id)?;
+                        self.tokens_uri.save(
+                            deps.storage,
+                            &token.extension.get_token_uri(),
+                            nam,
+                        )?;
+
+                        //  self.tokens_uri
+                        //     .remove(deps.storage, &token.extension.get_token_uri())?;
+                        if let Some(img) = token.extension.get_image_raw() {
+                            self.image_uri.save(deps.storage, &img, nam)?;
+                            //   self.image_uri.remove(deps.storage, &img)?;
+                        }
+                        if old_exists {
+                            self.change_dynamics.remove(deps.storage, token_id)?;
+                        }
+                        change_dynamics.token_id = nam.to_string();
+                        self.change_dynamics
+                            .save(deps.storage, nam, &change_dynamics)?;
+                    }
+                }
+            }
+        } else {
+            // just a description change.. no need to mess with the indexes
+            self.tokens.save(deps.storage, token_id, &token)?;
+            self.change_dynamics
+                .save(deps.storage, token_id, &change_dynamics)?;
+        }
+
         Ok(token)
     }
 
@@ -755,5 +1032,48 @@ where
             .add_attribute("sender", info.sender)
             .add_attribute("status", status)
             .add_attribute("token_id", token_id))
+    }
+    fn set_name_description(
+        &self,
+        deps: DepsMut,
+        env: Env,
+        info: MessageInfo,
+        token_id: String,
+        name: Option<String>,
+        description: Option<String>,
+    ) -> Result<Response<C>, ContractError> {
+        self._set_name_description(deps, &env, &info, &token_id, &name, &description)?;
+
+        if let Some(name_in) = name {
+            if name_in.is_empty() {
+                Ok(Response::new()
+                    .add_attribute("action", "change_name")
+                    .add_attribute("sender", info.sender)
+                    .add_attribute("token_id", token_id)
+                    .add_attribute(
+                        "description",
+                        description.unwrap_or_else(|| "-not changed-".to_string()),
+                    ))
+            } else {
+                Ok(Response::new()
+                    .add_attribute("action", "change_name")
+                    .add_attribute("sender", info.sender)
+                    .add_attribute("old_token_id", token_id)
+                    .add_attribute("token_id", name_in)
+                    .add_attribute(
+                        "description",
+                        description.unwrap_or_else(|| "-not changed-".to_string()),
+                    ))
+            }
+        } else {
+            Ok(Response::new()
+                .add_attribute("action", "change_description")
+                .add_attribute("sender", info.sender)
+                .add_attribute("token_id", token_id)
+                .add_attribute(
+                    "description",
+                    description.unwrap_or_else(|| "-not changed-".to_string()),
+                ))
+        }
     }
 }
