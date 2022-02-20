@@ -61,11 +61,11 @@ cosmwasm-schema =  "0.16.0"
 optimize = """docker run --rm -v "$(pwd)":/code \
           --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
             --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-              cosmwasm/rust-optimizer:0.12.3"""
+              cosmwasm/rust-optimizer:0.12.5"""
 optimize-w32 = """docker run --rm -v c:\\users\\ihols\\pfc\\openpeep\\terra-peep721:/code  \
             --mount type=volume,source=terra-peep_cache,target=/code/target \
             --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-            cosmwasm/rust-optimizer:0.12.3"""
+            cosmwasm/rust-optimizer:0.12.5"""
 store = """terra-rust code store test-owner artifacts\\terra_peep721.wasm"""
 instantiate = """terra-rust code instantiate test-owner artifacts\\terra_peep721.wasm .\\init.json --admin same"""
 migrate = """terra-rust code migrate test-owner artifacts\\terra_peep721.wasm """

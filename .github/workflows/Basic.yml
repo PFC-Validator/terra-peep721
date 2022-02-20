@@ -48,13 +48,14 @@ jobs:
             docker run --rm -v "$(pwd)":/code \
             --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
             --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-                  cosmwasm/workspace-optimizer:0.12.5
+                  cosmwasm/rust-optimizer:0.12.5
 
       - name: Commit files
         run: |
           git config --local user.email "81114960+PFC-developer@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add artifacts
+          git add schema
           git commit -m "Artifact generation"
 
       - name: Push changes
