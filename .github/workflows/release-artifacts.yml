@@ -41,5 +41,5 @@ jobs:
         run: |
           cp .env.defaults.workflow .env
           cargo install terra-rust
-          cargo terra --retries 20 --phrase ${{ secrets.WALLET_PHRASE }} migrate ${{ secrets.CONTRACT_ADDRESS }} .\artifacts\terra_peep721.wasm
+          cargo terra --retries 20 --phrase "${{ secrets.WALLET_PHRASE }}" migrate ${{ secrets.CONTRACT_ADDRESS }} .\artifacts\terra_peep721.wasm
 
