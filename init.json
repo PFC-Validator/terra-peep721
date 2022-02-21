@@ -1,6 +1,6 @@
 {
-  "name": "TerraPeeps",
-  "symbol": "PEEPS",
+  "name": "TerraPeeps Example NFT",
+  "symbol": "PEEPS-GH",
   "minter":  "##SENDER##",
   "public_key": "AiMzHaA2bvnDXfHzkjMM+vkSE/p0ymBtAFKUnUtQAeXe",
   "change_amount": 1000000,

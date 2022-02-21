@@ -37,7 +37,7 @@ jobs:
         env:
           RUSTFLAGS: "-C link-arg=-s"
 
-      - name: generate schema
+      - name: Generate schema
         uses: actions-rs/cargo@v1
         with:
           command: schema

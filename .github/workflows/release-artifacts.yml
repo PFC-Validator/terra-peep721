@@ -33,3 +33,13 @@ jobs:
         with:
           files: cosmwasm-artifacts.tar.gz
           body_path: CHANGELOG.md
+
+      - name: Migrate example
+        env:
+          WALLET_PHRASE: ${{ secrets.WALLET_PHRASE }}
+          CONTRACT_ADDRESS: ${{ secrets.CONTRACT_ADDRESS }}
+        run: |
+          cp .env.defaults.workflow .env
+          cargo install terra-rust
+          cargo terra --retries 20 --phrase ${{ secrets.WALLET_PHRASE }} migrate ${{ secrets.CONTRACT_ADDRESS }} .\artifacts\terra_peep721.wasm
+
