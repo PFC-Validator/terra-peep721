@@ -255,9 +255,7 @@ where
             .image_uri
             .range(deps.storage, start, None, Order::Ascending)
             .take(limit)
-            .map(|item| {
-                item.map(|(k, x)| format!("{}/{}", String::from_utf8_lossy(&k).to_string(), x))
-            })
+            .map(|item| item.map(|(k, x)| format!("{}/{}", String::from_utf8_lossy(&k), x)))
             .collect();
         Ok(TokensResponse { tokens: tokens? })
     }

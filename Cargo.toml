@@ -1,6 +1,6 @@
 [package]
 name = "terra-peep721"
-version = "0.4.7"
+version = "0.4.8"
 authors = ["PFC"]
 edition = "2018"
 
@@ -56,7 +56,6 @@ terra-cosmwasm = "2.2.0"
 
 [dev-dependencies]
 cosmwasm-schema =  "0.16.0"
-terra-rust = "1.1.7"
 
 [package.metadata.scripts]
 optimize = """docker run --rm -v "$(pwd)":/code \

@@ -20,7 +20,7 @@ pub struct NftTraitSummary {
     pub value: Decimal,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
 pub struct NftContractInfo {
     pub description: Option<String>,
     pub src: Option<String>,
@@ -31,6 +31,7 @@ pub struct NftContractInfo {
     pub telegram: Option<String>,
     pub listing: Vec<NftListing>,
 }
+/*
 impl Default for NftContractInfo {
     fn default() -> Self {
         NftContractInfo {
@@ -45,7 +46,7 @@ impl Default for NftContractInfo {
         }
     }
 }
-
+*/
 pub struct Cw721Contract<'a, T, C>
 where
     T: Serialize + DeserializeOwned + Clone,
