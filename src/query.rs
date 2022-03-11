@@ -141,7 +141,8 @@ where
         token_id: String,
         include_expired: bool,
     ) -> StdResult<AllNftInfoResponse<T>> {
-        let prefix = self.image_prefix.load(deps.storage)?;
+        //      let prefix = self.image_prefix.load(deps.storage)?;
+        let prefix = self.image_prefix(deps.storage)?;
         let info = self.tokens.load(deps.storage, &token_id)?;
         let extension = if let Some(image) = info.extension.get_image(&prefix) {
             let mut extension = info.extension.clone();
